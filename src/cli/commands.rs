@@ -1,11 +1,16 @@
 use crate::api::ScryfallClient;
 use crate::calculator::{get_calculator, get_intensity_recommendations};
-use crate::cli::{AlgorithmArg, FormatArg};
+use crate::cli::{AlgorithmArg, FormatArg, LlmProviderArg};
 use crate::deck::{guild_name, Algorithm, Color, Deck};
-use crate::export::MarkdownExporter;
+use crate::export::{JsonExporter, MarkdownExporter, SynergyReportExporter};
+use crate::input::{DeckListParser, MoxfieldClient, TextDecklistParser};
+use crate::synergy::get_detector;
 use colored::Colorize;
 
 use super::interactive::{run_interactive_mana_flow, InteractiveConfig};
+use super::synergy_display::{
+    display_error, display_progress, display_synergy_matrix, display_warning,
+};
 
 pub async fn handle_mana_command(
     format: Option<FormatArg>,
@@ -243,6 +248,109 @@ fn capitalize(s: &str) -> String {
     }
 }
 
+pub async fn handle_synergy_command(
+    input: String,
+    llm: bool,
+    _provider: Option<LlmProviderArg>,
+    export: Option<String>,
+    json: Option<String>,
+    verbose: bool,
+) {
+    println!();
+    display_progress("Analyzing deck synergies...");
+    println!();
+
+    // 1. Parse the decklist
+    let mut deck_list = if input.contains("moxfield.com")
+        || MoxfieldClient::extract_deck_id(&input).is_some()
+            && !std::path::Path::new(&input).exists()
+    {
+        display_progress("Fetching deck from Moxfield...");
+        let client = MoxfieldClient::new();
+        match client.parse(&input).await {
+            Ok(deck) => deck,
+            Err(e) => {
+                display_error(&format!("Failed to fetch from Moxfield: {e}"));
+                return;
+            }
+        }
+    } else {
+        display_progress("Parsing decklist file...");
+        let parser = TextDecklistParser::new();
+        match parser.parse(&input).await {
+            Ok(deck) => deck,
+            Err(e) => {
+                display_error(&format!("Failed to parse decklist: {e}"));
+                return;
+            }
+        }
+    };
+
+    // 2. Hydrate with Scryfall data
+    display_progress(&format!(
+        "Fetching card data for {} cards from Scryfall...",
+        deck_list.unique_cards()
+    ));
+
+    let scryfall = ScryfallClient::new();
+    let card_names = deck_list.card_names();
+
+    match scryfall.batch_fetch_cards(card_names).await {
+        Ok(cards) => {
+            // Match fetched cards to deck entries
+            for entry in &mut deck_list.entries {
+                if let Some(card) = cards.get(&entry.card_name) {
+                    entry.card = Some(card.clone());
+                } else {
+                    display_warning(&format!("Card not found: {}", entry.card_name));
+                }
+            }
+        }
+        Err(e) => {
+            display_warning(&format!("Failed to fetch some cards: {e}"));
+        }
+    }
+
+    let hydrated_count = deck_list
+        .entries
+        .iter()
+        .filter(|e| e.card.is_some())
+        .count();
+    display_progress(&format!(
+        "Hydrated {} of {} cards",
+        hydrated_count,
+        deck_list.entries.len()
+    ));
+
+    // 3. Check for LLM mode (not yet implemented)
+    if llm {
+        display_warning("LLM-enhanced analysis is not yet implemented. Using rule-based analysis.");
+    }
+
+    // 4. Run synergy analysis
+    display_progress("Running synergy analysis...");
+    let detector = get_detector();
+    let matrix = detector.analyze(&deck_list);
+
+    // 5. Display results
+    display_synergy_matrix(&matrix, verbose);
+
+    // 6. Export if requested
+    if let Some(path) = export {
+        match SynergyReportExporter::export(&matrix, &path) {
+            Ok(_) => println!("{}", format!("Report saved to: {path}").green()),
+            Err(e) => display_error(&format!("Failed to export: {e}")),
+        }
+    }
+
+    if let Some(path) = json {
+        match JsonExporter::export(&matrix, &path) {
+            Ok(_) => println!("{}", format!("JSON saved to: {path}").green()),
+            Err(e) => display_error(&format!("Failed to export JSON: {e}")),
+        }
+    }
+}
+
 pub fn print_help() {
     println!(
         "{}",
@@ -263,6 +371,10 @@ pub fn print_help() {
         "    {}    Look up card information from Scryfall",
         "card".green()
     );
+    println!(
+        "    {} Analyze deck synergies from a decklist",
+        "synergy".green()
+    );
     println!("    {}    Print this help message", "help".green());
     println!();
     println!("{}", "EXAMPLES:".yellow());
@@ -271,6 +383,8 @@ pub fn print_help() {
     println!("    mtg mana --algorithm cmc           # Use CMC-weighted algorithm");
     println!("    mtg card \"Lightning Bolt\"          # Look up a card by name");
     println!("    mtg card --id <scryfall-id>        # Look up a card by ID");
+    println!("    mtg synergy -i deck.txt            # Analyze synergies from file");
+    println!("    mtg synergy -i https://moxfield.com/decks/xyz  # From Moxfield");
     println!();
     println!("{}", "For more information on a command, run:".dimmed());
     println!("    mtg <COMMAND> --help");

@@ -48,6 +48,33 @@ pub enum Commands {
         #[arg(long)]
         id: Option<String>,
     },
+
+    /// Analyze deck synergies and generate a synergy matrix
+    Synergy {
+        /// Path to decklist file or Moxfield URL
+        #[arg(short, long)]
+        input: String,
+
+        /// Use LLM for enhanced synergy detection
+        #[arg(long, default_value = "false")]
+        llm: bool,
+
+        /// LLM provider (anthropic, openai, ollama)
+        #[arg(long, value_enum)]
+        provider: Option<LlmProviderArg>,
+
+        /// Export results to markdown file
+        #[arg(short, long)]
+        export: Option<String>,
+
+        /// Export results to JSON file
+        #[arg(long)]
+        json: Option<String>,
+
+        /// Show verbose card-by-card analysis
+        #[arg(short, long)]
+        verbose: bool,
+    },
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -87,4 +114,11 @@ impl AlgorithmArg {
             AlgorithmArg::Hypergeo => crate::deck::Algorithm::Hypergeometric,
         }
     }
+}
+
+#[derive(Clone, Copy, ValueEnum, Debug)]
+pub enum LlmProviderArg {
+    Anthropic,
+    Openai,
+    Ollama,
 }
