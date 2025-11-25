@@ -30,11 +30,4 @@ impl FormatPreset {
             },
         ]
     }
-
-    pub fn names() -> Vec<String> {
-        Self::all()
-            .iter()
-            .map(|p| format!("{} - {}", p.format.name(), p.description))
-            .collect()
-    }
 }

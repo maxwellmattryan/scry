@@ -8,6 +8,7 @@ use crate::export::MarkdownExporter;
 
 use super::commands::run_calculation;
 
+#[derive(Default)]
 pub struct InteractiveConfig {
     pub preset_format: Option<Format>,
     pub preset_algorithm: Option<Algorithm>,
@@ -15,19 +16,6 @@ pub struct InteractiveConfig {
     pub preset_cards: Option<u32>,
     pub preset_lands: Option<u32>,
     pub export_path: Option<String>,
-}
-
-impl Default for InteractiveConfig {
-    fn default() -> Self {
-        Self {
-            preset_format: None,
-            preset_algorithm: None,
-            preset_colors: None,
-            preset_cards: None,
-            preset_lands: None,
-            export_path: None,
-        }
-    }
 }
 
 pub async fn run_interactive_mana_flow(
@@ -120,7 +108,7 @@ pub async fn run_interactive_mana_flow(
         let calculator = get_calculator(algorithm);
         let mana_base = calculator.calculate(&deck);
         MarkdownExporter::export(&deck, &mana_base, &path)?;
-        println!("{}", format!("Results saved to: {}", path).green());
+        println!("{}", format!("Results saved to: {path}").green());
     }
 
     Ok(())
@@ -157,8 +145,7 @@ fn prompt_land_count(format: Format) -> Result<u32, Box<dyn std::error::Error>> 
 
     let lands: u32 = Input::new()
         .with_prompt(format!(
-            "How many lands do you want to run? [{}-{} recommended]",
-            min, max
+            "How many lands do you want to run? [{min}-{max} recommended]"
         ))
         .default(default)
         .interact_text()?;

@@ -1,7 +1,6 @@
-use crate::deck::{Color, Deck};
+use crate::deck::Deck;
 
 pub struct PipAnalysis {
-    pub color: Color,
     pub intensity: u32,
     pub warning: Option<String>,
 }
@@ -32,11 +31,7 @@ pub fn analyze_pip_intensity(deck: &Deck) -> Vec<PipAnalysis> {
             None
         };
 
-        analyses.push(PipAnalysis {
-            color: *color,
-            intensity,
-            warning,
-        });
+        analyses.push(PipAnalysis { intensity, warning });
     }
 
     // Sort by intensity descending

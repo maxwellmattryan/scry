@@ -31,7 +31,7 @@ pub struct Card {
 impl Card {
     pub fn power_toughness(&self) -> Option<String> {
         match (&self.power, &self.toughness) {
-            (Some(p), Some(t)) => Some(format!("{}/{}", p, t)),
+            (Some(p), Some(t)) => Some(format!("{p}/{t}")),
             _ => None,
         }
     }
@@ -56,15 +56,7 @@ pub struct ImageUris {
 }
 
 #[derive(Debug, Deserialize)]
-struct SearchResponse {
-    data: Vec<Card>,
-    total_cards: u32,
-    has_more: bool,
-}
-
-#[derive(Debug, Deserialize)]
 struct ErrorResponse {
-    status: u32,
     code: String,
     details: String,
 }
@@ -126,7 +118,7 @@ impl ScryfallClient {
             return Ok(card);
         }
 
-        let url = format!("{}/cards/{}", SCRYFALL_API_BASE, id);
+        let url = format!("{SCRYFALL_API_BASE}/cards/{id}");
 
         let response = self
             .client
@@ -139,29 +131,6 @@ impl ScryfallClient {
             let card: Card = response.json().await.map_err(|e| e.to_string())?;
             self.cache.set(&card.id, &card);
             Ok(card)
-        } else {
-            let error: ErrorResponse = response.json().await.map_err(|e| e.to_string())?;
-            Err(format!("{}: {}", error.code, error.details))
-        }
-    }
-
-    pub async fn search_cards(&self, query: &str) -> Result<Vec<Card>, String> {
-        let url = format!(
-            "{}/cards/search?q={}",
-            SCRYFALL_API_BASE,
-            urlencoding::encode(query)
-        );
-
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if response.status().is_success() {
-            let search: SearchResponse = response.json().await.map_err(|e| e.to_string())?;
-            Ok(search.data)
         } else {
             let error: ErrorResponse = response.json().await.map_err(|e| e.to_string())?;
             Err(format!("{}: {}", error.code, error.details))

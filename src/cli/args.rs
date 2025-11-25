@@ -60,7 +60,7 @@ pub enum FormatArg {
 }
 
 impl FormatArg {
-    pub fn to_format(&self) -> crate::deck::Format {
+    pub fn to_format(self) -> crate::deck::Format {
         match self {
             FormatArg::Commander => crate::deck::Format::Commander,
             FormatArg::Standard => crate::deck::Format::Standard,
@@ -80,7 +80,7 @@ pub enum AlgorithmArg {
 }
 
 impl AlgorithmArg {
-    pub fn to_algorithm(&self) -> crate::deck::Algorithm {
+    pub fn to_algorithm(self) -> crate::deck::Algorithm {
         match self {
             AlgorithmArg::Simple => crate::deck::Algorithm::Simple,
             AlgorithmArg::Cmc => crate::deck::Algorithm::CmcWeighted,

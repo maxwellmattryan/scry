@@ -112,8 +112,4 @@ impl ManaCalculator for CmcWeightedCalculator {
 
         mana_base
     }
-
-    fn name(&self) -> &'static str {
-        "CMC-Weighted"
-    }
 }

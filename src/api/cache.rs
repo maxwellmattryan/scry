@@ -46,12 +46,6 @@ impl CardCache {
         serde_json::from_str(&contents).ok()
     }
 
-    fn save_cache(&self) {
-        if let Ok(json) = serde_json::to_string_pretty(&self.data) {
-            fs::write(&self.cache_path, json).ok();
-        }
-    }
-
     fn current_timestamp() -> u64 {
         SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -92,10 +86,6 @@ impl CardCache {
         if let Ok(json) = serde_json::to_string_pretty(&data) {
             fs::write(&self.cache_path, json).ok();
         }
-    }
-
-    pub fn clear(&self) {
-        fs::remove_file(&self.cache_path).ok();
     }
 }
 

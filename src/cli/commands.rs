@@ -1,7 +1,7 @@
 use crate::api::ScryfallClient;
 use crate::calculator::{get_calculator, get_intensity_recommendations};
 use crate::cli::{AlgorithmArg, FormatArg};
-use crate::deck::{guild_name, Algorithm, Color, Deck, Format};
+use crate::deck::{guild_name, Algorithm, Color, Deck};
 use crate::export::MarkdownExporter;
 use colored::Colorize;
 
@@ -92,7 +92,7 @@ pub async fn handle_card_command(name: Option<String>, id: Option<String>) {
                 println!();
                 println!("{}", "Oracle Text:".yellow());
                 for line in text.lines() {
-                    println!("  {}", line);
+                    println!("  {line}");
                 }
             }
 
@@ -110,10 +110,10 @@ pub async fn handle_card_command(name: Option<String>, id: Option<String>) {
                 println!();
                 println!("{}", "Prices:".yellow());
                 if let Some(usd) = &prices.usd {
-                    println!("  TCGPlayer: ${}", usd);
+                    println!("  TCGPlayer: ${usd}");
                 }
                 if let Some(usd_foil) = &prices.usd_foil {
-                    println!("  TCGPlayer (Foil): ${}", usd_foil);
+                    println!("  TCGPlayer (Foil): ${usd_foil}");
                 }
             }
 
@@ -153,7 +153,7 @@ pub fn run_calculation(deck: &Deck, algorithm: Algorithm, export: Option<String>
     let total_basics: u32 = mana_base.basics.values().sum();
     println!(
         "{}",
-        format!("Basic Lands ({} total):", total_basics).yellow()
+        format!("Basic Lands ({total_basics} total):").yellow()
     );
 
     let mut basics: Vec<_> = mana_base.basics.iter().collect();
@@ -184,10 +184,7 @@ pub fn run_calculation(deck: &Deck, algorithm: Algorithm, export: Option<String>
     if !mana_base.duals.is_empty() {
         let total_duals: u32 = mana_base.duals.iter().map(|d| d.count).sum();
         println!();
-        println!(
-            "{}",
-            format!("Dual Lands ({} total):", total_duals).yellow()
-        );
+        println!("{}", format!("Dual Lands ({total_duals} total):").yellow());
 
         for dual in &mana_base.duals {
             let name = if dual.colors.len() == 2 {
@@ -225,7 +222,7 @@ pub fn run_calculation(deck: &Deck, algorithm: Algorithm, export: Option<String>
     // Export if requested
     if let Some(path) = export {
         match MarkdownExporter::export(deck, &mana_base, &path) {
-            Ok(_) => println!("{}", format!("Results saved to: {}", path).green()),
+            Ok(_) => println!("{}", format!("Results saved to: {path}").green()),
             Err(e) => eprintln!("{}: {}", "Export error".red(), e),
         }
     }

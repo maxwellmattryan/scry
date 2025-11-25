@@ -3,7 +3,6 @@ use crate::deck::{Algorithm, Deck, ManaBase};
 
 pub trait ManaCalculator {
     fn calculate(&self, deck: &Deck) -> ManaBase;
-    fn name(&self) -> &'static str;
 }
 
 pub fn get_calculator(algorithm: Algorithm) -> Box<dyn ManaCalculator> {

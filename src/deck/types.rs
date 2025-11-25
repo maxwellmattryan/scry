@@ -203,14 +203,6 @@ impl ManaBase {
             color_percentages: HashMap::new(),
         }
     }
-
-    pub fn total_basics(&self) -> u32 {
-        self.basics.values().sum()
-    }
-
-    pub fn total_duals(&self) -> u32 {
-        self.duals.iter().map(|d| d.count).sum()
-    }
 }
 
 impl Default for ManaBase {
@@ -232,14 +224,6 @@ impl Algorithm {
             Algorithm::Simple => "simple",
             Algorithm::CmcWeighted => "cmc",
             Algorithm::Hypergeometric => "hypergeo",
-        }
-    }
-
-    pub fn description(&self) -> &'static str {
-        match self {
-            Algorithm::Simple => "Proportional to mana symbols",
-            Algorithm::CmcWeighted => "Weighted by converted mana cost",
-            Algorithm::Hypergeometric => "Hypergeometric probability calculations",
         }
     }
 }
@@ -266,7 +250,7 @@ pub fn guild_name(colors: &[Color]) -> Option<&'static str> {
         Color::Colorless => 5,
     });
 
-    match (sorted.get(0), sorted.get(1)) {
+    match (sorted.first(), sorted.get(1)) {
         (Some(Color::White), Some(Color::Blue)) => Some("Azorius"),
         (Some(Color::White), Some(Color::Black)) => Some("Orzhov"),
         (Some(Color::White), Some(Color::Red)) => Some("Boros"),

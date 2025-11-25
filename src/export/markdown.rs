@@ -65,7 +65,7 @@ impl MarkdownExporter {
 
         // Basic Lands
         let total_basics: u32 = mana_base.basics.values().sum();
-        output.push_str(&format!("### Basic Lands ({} total)\n\n", total_basics));
+        output.push_str(&format!("### Basic Lands ({total_basics} total)\n\n"));
 
         let mut basics: Vec<_> = mana_base.basics.iter().collect();
         basics.sort_by_key(|(c, _)| match c {
@@ -85,7 +85,7 @@ impl MarkdownExporter {
         // Dual Lands
         if !mana_base.duals.is_empty() {
             let total_duals: u32 = mana_base.duals.iter().map(|d| d.count).sum();
-            output.push_str(&format!("### Dual Lands ({} total)\n\n", total_duals));
+            output.push_str(&format!("### Dual Lands ({total_duals} total)\n\n"));
 
             for dual in &mana_base.duals {
                 let name = if dual.colors.len() == 2 {
@@ -112,7 +112,7 @@ impl MarkdownExporter {
         if !recommendations.is_empty() {
             output.push_str("## Pip Intensity Analysis\n\n");
             for rec in recommendations {
-                output.push_str(&format!("- ⚠️ {}\n", rec));
+                output.push_str(&format!("- ⚠️ {rec}\n"));
             }
             output.push('\n');
         }

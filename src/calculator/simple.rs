@@ -78,8 +78,4 @@ impl ManaCalculator for SimpleCalculator {
 
         mana_base
     }
-
-    fn name(&self) -> &'static str {
-        "Simple Proportional"
-    }
 }
