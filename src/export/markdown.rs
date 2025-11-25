@@ -2,12 +2,16 @@ use std::fs;
 use std::io::Write;
 
 use crate::calculator::get_intensity_recommendations;
-use crate::deck::{Color, Deck, ManaBase, guild_name};
+use crate::deck::{guild_name, Color, Deck, ManaBase};
 
 pub struct MarkdownExporter;
 
 impl MarkdownExporter {
-    pub fn export(deck: &Deck, mana_base: &ManaBase, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn export(
+        deck: &Deck,
+        mana_base: &ManaBase,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let content = Self::generate(deck, mana_base);
         let mut file = fs::File::create(path)?;
         file.write_all(content.as_bytes())?;

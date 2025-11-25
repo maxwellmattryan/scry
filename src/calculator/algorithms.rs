@@ -1,5 +1,5 @@
+use super::{CmcWeightedCalculator, SimpleCalculator};
 use crate::deck::{Algorithm, Deck, ManaBase};
-use super::{SimpleCalculator, CmcWeightedCalculator};
 
 pub trait ManaCalculator {
     fn calculate(&self, deck: &Deck) -> ManaBase;

@@ -1,13 +1,11 @@
-use colored::Colorize;
 use crate::api::ScryfallClient;
 use crate::calculator::{get_calculator, get_intensity_recommendations};
 use crate::cli::{AlgorithmArg, FormatArg};
-use crate::deck::{Algorithm, Color, Deck, Format, guild_name};
+use crate::deck::{guild_name, Algorithm, Color, Deck, Format};
 use crate::export::MarkdownExporter;
+use colored::Colorize;
 
-use super::interactive::{
-    run_interactive_mana_flow, InteractiveConfig,
-};
+use super::interactive::{run_interactive_mana_flow, InteractiveConfig};
 
 pub async fn handle_mana_command(
     format: Option<FormatArg>,
@@ -249,14 +247,25 @@ fn capitalize(s: &str) -> String {
 }
 
 pub fn print_help() {
-    println!("{}", "MTG - Magic: The Gathering Deck Building Utilities".bold().cyan());
+    println!(
+        "{}",
+        "MTG - Magic: The Gathering Deck Building Utilities"
+            .bold()
+            .cyan()
+    );
     println!();
     println!("{}", "USAGE:".yellow());
     println!("    mtg <COMMAND>");
     println!();
     println!("{}", "COMMANDS:".yellow());
-    println!("    {}    Calculate optimal mana ratios for your deck", "mana".green());
-    println!("    {}    Look up card information from Scryfall", "card".green());
+    println!(
+        "    {}    Calculate optimal mana ratios for your deck",
+        "mana".green()
+    );
+    println!(
+        "    {}    Look up card information from Scryfall",
+        "card".green()
+    );
     println!("    {}    Print this help message", "help".green());
     println!();
     println!("{}", "EXAMPLES:".yellow());

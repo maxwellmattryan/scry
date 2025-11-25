@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use crate::deck::{Color, Deck, ManaBase};
 use super::algorithms::ManaCalculator;
+use crate::deck::{Color, Deck, ManaBase};
+use std::collections::HashMap;
 
 pub struct SimpleCalculator;
 

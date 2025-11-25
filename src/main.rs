@@ -5,7 +5,7 @@ mod deck;
 mod export;
 
 use clap::Parser;
-use cli::{Cli, Commands, handle_card_command, handle_mana_command, print_help};
+use cli::{handle_card_command, handle_mana_command, print_help, Cli, Commands};
 
 #[tokio::main]
 async fn main() {

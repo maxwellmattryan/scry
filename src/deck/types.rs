@@ -84,7 +84,11 @@ pub struct DualLand {
 
 impl DualLand {
     pub fn new(name: String, colors: Vec<Color>, count: u32) -> Self {
-        Self { name, colors, count }
+        Self {
+            name,
+            colors,
+            count,
+        }
     }
 }
 

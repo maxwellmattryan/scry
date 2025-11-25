@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use super::types::{Color, Deck, DualLand, Format};
+use std::collections::HashMap;
 
 pub struct DeckBuilder {
     deck: Deck,
@@ -50,7 +50,9 @@ impl DeckBuilder {
     }
 
     pub fn add_dual_land(mut self, name: String, colors: Vec<Color>, count: u32) -> Self {
-        self.deck.dual_lands.push(DualLand::new(name, colors, count));
+        self.deck
+            .dual_lands
+            .push(DualLand::new(name, colors, count));
         self
     }
 

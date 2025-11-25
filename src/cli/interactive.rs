@@ -3,7 +3,7 @@ use dialoguer::{Confirm, Input, MultiSelect, Select};
 use std::collections::HashMap;
 
 use crate::calculator::get_calculator;
-use crate::deck::{Algorithm, Color, Deck, DualLand, Format, FormatPreset, guild_name};
+use crate::deck::{guild_name, Algorithm, Color, Deck, DualLand, Format, FormatPreset};
 use crate::export::MarkdownExporter;
 
 use super::commands::run_calculation;
@@ -30,7 +30,9 @@ impl Default for InteractiveConfig {
     }
 }
 
-pub async fn run_interactive_mana_flow(config: InteractiveConfig) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run_interactive_mana_flow(
+    config: InteractiveConfig,
+) -> Result<(), Box<dyn std::error::Error>> {
     println!();
     println!("{}", "Welcome to MTG Mana Calculator!".bold().cyan());
     println!();
@@ -72,7 +74,10 @@ pub async fn run_interactive_mana_flow(config: InteractiveConfig) -> Result<(), 
     // 5. Count mana symbols for each color
     println!();
     println!("{}", "Let's count mana symbols for each color.".cyan());
-    println!("{}", "(Count each pip individually - a {W}{W} card counts as 2)".dimmed());
+    println!(
+        "{}",
+        "(Count each pip individually - a {W}{W} card counts as 2)".dimmed()
+    );
     println!();
 
     let mut mana_symbols: HashMap<Color, u32> = HashMap::new();
@@ -162,13 +167,7 @@ fn prompt_land_count(format: Format) -> Result<u32, Box<dyn std::error::Error>> 
 }
 
 fn select_colors() -> Result<Vec<Color>, Box<dyn std::error::Error>> {
-    let color_options = vec![
-        "White (W)",
-        "Blue (U)",
-        "Black (B)",
-        "Red (R)",
-        "Green (G)",
-    ];
+    let color_options = vec!["White (W)", "Blue (U)", "Black (B)", "Red (R)", "Green (G)"];
 
     let selections = MultiSelect::new()
         .with_prompt("Which colors are in your deck? (Space to select, Enter to confirm)")
@@ -230,9 +229,7 @@ fn prompt_dual_lands(colors: &[Color]) -> Result<Vec<DualLand>, Box<dyn std::err
             let pair = vec![colors[i], colors[j]];
             let name = guild_name(&pair)
                 .map(|g| g.to_string())
-                .unwrap_or_else(|| {
-                    format!("{}/{}", colors[i].symbol(), colors[j].symbol())
-                });
+                .unwrap_or_else(|| format!("{}/{}", colors[i].symbol(), colors[j].symbol()));
 
             let count: u32 = Input::new()
                 .with_prompt(format!(

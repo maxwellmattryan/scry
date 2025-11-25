@@ -103,7 +103,12 @@ impl ScryfallClient {
             urlencoding::encode(query)
         );
 
-        let response = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
 
         if response.status().is_success() {
             let card: Card = response.json().await.map_err(|e| e.to_string())?;
@@ -123,7 +128,12 @@ impl ScryfallClient {
 
         let url = format!("{}/cards/{}", SCRYFALL_API_BASE, id);
 
-        let response = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
 
         if response.status().is_success() {
             let card: Card = response.json().await.map_err(|e| e.to_string())?;
@@ -142,7 +152,12 @@ impl ScryfallClient {
             urlencoding::encode(query)
         );
 
-        let response = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
 
         if response.status().is_success() {
             let search: SearchResponse = response.json().await.map_err(|e| e.to_string())?;

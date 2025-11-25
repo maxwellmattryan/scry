@@ -6,7 +6,11 @@ use crate::deck::{Deck, ManaBase};
 pub struct JsonExporter;
 
 impl JsonExporter {
-    pub fn export(deck: &Deck, mana_base: &ManaBase, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn export(
+        deck: &Deck,
+        mana_base: &ManaBase,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let output = serde_json::json!({
             "deck": deck,
             "mana_base": mana_base,
