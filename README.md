@@ -1,8 +1,8 @@
-# 🌑 MTG Deck Builder
+# 🌑 Magic: The Gathering CLI Tool
 
-[![Build](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.build.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.build.yml)
-[![Lint](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.lint.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.lint.yml)
-[![Format](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.fmt.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.fmt.yml)
+[![Build](https://github.com/maxwellmattryan/scry/actions/workflows/ci.build.yml/badge.svg)](https://github.com/maxwellmattryan/scry/actions/workflows/ci.build.yml)
+[![Lint](https://github.com/maxwellmattryan/scry/actions/workflows/ci.lint.yml/badge.svg)](https://github.com/maxwellmattryan/scry/actions/workflows/ci.lint.yml)
+[![Format](https://github.com/maxwellmattryan/scry/actions/workflows/ci.fmt.yml/badge.svg)](https://github.com/maxwellmattryan/scry/actions/workflows/ci.fmt.yml)
 
 **A command-line grimoire for the discerning planeswalker.**
 
@@ -15,10 +15,12 @@ Channel the arcane mathematics of mana base construction. Scry the Multiverse fo
 | | |
 |---|---|
 | **Mana Base Calculator** | Divine the optimal land distribution through ancient algorithmic arts |
-| **Card Lookup** | Peer into the Scryfall archives — prices, legalities, oracle text revealed |
+| **Card Lookup** | Peer into the Scryfall and MTG.io archives — prices, legalities, oracle text revealed |
+| **Synergy Analysis** | Uncover hidden connections and interactions between cards in your deck |
 | **Format Presets** | Commander, Standard, Modern, Limited, or forge your own Custom path |
 | **Multiple Algorithms** | Simple proportional, CMC-weighted, or hypergeometric calculations |
-| **Interactive Mode** | Let the tool guide you through the ritual with `mtg mana` |
+| **LLM Enhancement** | Harness AI to detect deeper synergies beyond keyword matching |
+| **Interactive Mode** | Let the tool guide you through the ritual with `scry mana` |
 | **Export Results** | Inscribe your findings to Markdown or JSON scrolls |
 
 ---
@@ -27,14 +29,14 @@ Channel the arcane mathematics of mana base construction. Scry the Multiverse fo
 
 ```bash
 # Summon the repository
-git clone https://github.com/maxwellmattryan/mtg.git
-cd mtg
+git clone https://github.com/maxwellmattryan/scry.git
+cd scry
 
 # Forge the binary
 cargo build --release
 
 # Your artifact awaits at:
-./target/release/mtg
+./target/release/scry
 ```
 
 **Or install directly to your PATH:**
@@ -42,7 +44,7 @@ cargo build --release
 cargo install --path .
 ```
 
-This binds the `mtg` command to your shell, accessible from any realm.
+This binds the `scry` command to your shell, accessible from any realm.
 
 ---
 
@@ -52,33 +54,87 @@ This binds the `mtg` command to your shell, accessible from any realm.
 
 **Interactive mode** — the tool guides your hand:
 ```bash
-mtg mana
+scry mana
 ```
 
 **Direct invocation** — for those who know the incantations:
 ```bash
 # Esper Commander deck
-mtg mana --format commander --colors WUB
+scry mana --format commander --colors WUB
 
 # Gruul Standard with CMC weighting
-mtg mana --format standard --colors RG --algorithm cmc
+scry mana --format standard --colors RG --algorithm cmc
 
 # Custom 80-card vessel
-mtg mana --format custom --colors WU --cards 80 --lands 30
+scry mana --format custom --colors WU --cards 80 --lands 30
 
 # Inscribe results to parchment
-mtg mana --format commander --colors WUBRG --export manabase.md
+scry mana --format commander --colors WUBRG --export manabase.md
 ```
+
+**Available options:**
+- `-f, --format <FORMAT>` — Format preset: `commander`, `standard`, `modern`, `limited`, `custom`
+- `-a, --algorithm <ALGORITHM>` — Calculation algorithm: `simple` (default), `cmc`, `hypergeo`
+- `-c, --colors <COLORS>` — Deck colors (e.g., WUB for Esper)
+- `--cards <CARDS>` — Total cards in deck (required for custom format)
+- `-l, --lands <LANDS>` — Target number of lands (required for custom format)
+- `-e, --export <FILE>` — Export results to markdown file
 
 ### Card Lookup
 
 ```bash
 # Seek by name (fuzzy matching penetrates minor misspellings)
-mtg card "Lightning Bolt"
+scry card "Lightning Bolt"
 
 # Divine by Scryfall ID
-mtg card --id <scryfall-uuid>
+scry card --id <scryfall-uuid>
+
+# Query the scry.io API instead
+scry card "Sol Ring" --api scryio
+
+# Disable fallback to secondary API
+scry card "Mox Ruby" --no-fallback
 ```
+
+**Available options:**
+- `<NAME>` — Card name to search for
+- `--id <ID>` — Search by provider-specific ID
+- `--api <API>` — API provider: `scryfall` (default), `mtgio`
+- `--no-fallback` — Disable fallback to secondary API on failure
+
+### Synergy Analysis
+
+Uncover the hidden connections between your cards:
+```bash
+# Analyze a decklist file
+scry synergy --input deck.txt
+
+# Analyze a Moxfield deck URL
+scry synergy --input "https://www.moxfield.com/decks/..."
+
+# Enhanced analysis with LLM
+scry synergy --input deck.txt --llm --provider anthropic
+
+# Export detailed analysis
+scry synergy --input deck.txt --export synergies.md --verbose
+
+# Export to JSON for programmatic use
+scry synergy --input deck.txt --json synergies.json
+
+# For decklists exported from Moxfield (without basic lands)
+scry synergy --input moxfield-deck.txt --excludes-lands
+```
+
+**Available options:**
+- `-i, --input <INPUT>` — Path to decklist file or Moxfield URL (required)
+- `--llm` — Enable LLM-enhanced synergy detection
+- `--provider <PROVIDER>` — LLM provider: `anthropic`, `openai`, `ollama`
+- `-e, --export <FILE>` — Export results to markdown file
+- `--json <FILE>` — Export results to JSON file
+- `-v, --verbose` — Show detailed card-by-card analysis
+- `--api <API>` — API provider for card data: `scryfall` (default), `mtgio`
+- `--no-fallback` — Disable fallback to secondary API on failure
+- `--excludes-lands` — Indicates decklist excludes basic lands
 
 ---
 

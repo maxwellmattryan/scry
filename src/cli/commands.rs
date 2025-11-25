@@ -386,13 +386,13 @@ pub async fn handle_synergy_command(
 pub fn print_help() {
     println!(
         "{}",
-        "MTG - Magic: The Gathering Deck Building Utilities"
+        "Scry - Magic: The Gathering Deck Building Utilities"
             .bold()
             .cyan()
     );
     println!();
     println!("{}", "USAGE:".yellow());
-    println!("    mtg <COMMAND>");
+    println!("    scry <COMMAND>");
     println!();
     println!("{}", "COMMANDS:".yellow());
     println!(
@@ -410,14 +410,14 @@ pub fn print_help() {
     println!("    {}    Print this help message", "help".green());
     println!();
     println!("{}", "EXAMPLES:".yellow());
-    println!("    mtg mana                           # Interactive mana calculator");
-    println!("    mtg mana --format commander        # Start with Commander preset");
-    println!("    mtg mana --algorithm cmc           # Use CMC-weighted algorithm");
-    println!("    mtg card \"Lightning Bolt\"          # Look up a card by name");
-    println!("    mtg card --id <scryfall-id>        # Look up a card by ID");
-    println!("    mtg synergy -i deck.txt            # Analyze synergies from file");
-    println!("    mtg synergy -i https://moxfield.com/decks/xyz  # From Moxfield");
+    println!("    scry mana                           # Interactive mana calculator");
+    println!("    scry mana --format commander        # Start with Commander preset");
+    println!("    scry mana --algorithm cmc           # Use CMC-weighted algorithm");
+    println!("    scry card \"Lightning Bolt\"          # Look up a card by name");
+    println!("    scry card --id <scryfall-id>        # Look up a card by ID");
+    println!("    scry synergy -i deck.txt            # Analyze synergies from file");
+    println!("    scry synergy -i https://moxfield.com/decks/xyz  # From Moxfield");
     println!();
     println!("{}", "For more information on a command, run:".dimmed());
-    println!("    mtg <COMMAND> --help");
+    println!("    scry <COMMAND> --help");
 }

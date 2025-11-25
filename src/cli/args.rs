@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
-#[command(name = "mtg")]
-#[command(author = "MTG Mana Calculator")]
+#[command(name = "scry")]
+#[command(author = "Matthew Maxwell")]
 #[command(version = "0.1.0")]
 #[command(about = "Magic: The Gathering deck building utilities", long_about = None)]
 pub struct Cli {

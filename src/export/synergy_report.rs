@@ -20,7 +20,7 @@ impl SynergyReportExporter {
         let mut output = String::new();
 
         // Header
-        output.push_str("# MTG Deck Synergy Analysis\n\n");
+        output.push_str("# Scry Deck Synergy Analysis\n\n");
         output.push_str(&format!(
             "Generated: {}\n\n",
             Local::now().format("%Y-%m-%d %H:%M")

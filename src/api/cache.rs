@@ -35,7 +35,7 @@ impl CardCache {
     fn get_cache_path() -> PathBuf {
         let cache_dir = dirs::cache_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("mtg");
+            .join("scry");
 
         fs::create_dir_all(&cache_dir).ok();
         cache_dir.join("card_cache.json")
