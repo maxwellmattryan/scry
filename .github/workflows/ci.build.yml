@@ -6,7 +6,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  fnote:
+  scry:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -24,7 +24,7 @@ jobs:
         run: cargo build --release
 
       - name: Run (Help)
-        run: ./target/release/mtg
+        run: ./target/release/scry
 
       - name: Run (Card)
-        run: ./target/release/mtg card "Avatar Aang"
+        run: ./target/release/scry card "Avatar Aang"
