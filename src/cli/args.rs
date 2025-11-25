@@ -143,6 +143,16 @@ pub enum LlmProviderArg {
     Ollama,
 }
 
+impl LlmProviderArg {
+    pub fn to_provider(self) -> crate::llm::LlmProvider {
+        match self {
+            LlmProviderArg::Anthropic => crate::llm::LlmProvider::Anthropic,
+            LlmProviderArg::Openai => crate::llm::LlmProvider::OpenAi,
+            LlmProviderArg::Ollama => crate::llm::LlmProvider::Ollama,
+        }
+    }
+}
+
 /// Card API provider selection
 #[derive(Clone, Copy, ValueEnum, Default, Debug)]
 pub enum ApiProviderArg {

@@ -257,7 +257,7 @@ fn capitalize(s: &str) -> String {
 pub async fn handle_synergy_command(
     input: String,
     llm: bool,
-    _provider: Option<LlmProviderArg>,
+    llm_provider_arg: Option<LlmProviderArg>,
     export: Option<String>,
     json: Option<String>,
     verbose: bool,
@@ -347,11 +347,19 @@ pub async fn handle_synergy_command(
 
     // 5. Run LLM-enhanced analysis if requested
     if llm {
-        display_progress("Running LLM-enhanced analysis...");
+        // Default to Anthropic if --provider not specified
+        let llm_provider = llm_provider_arg
+            .map(|p| p.to_provider())
+            .unwrap_or(crate::llm::LlmProvider::Anthropic);
+
+        display_progress(&format!(
+            "Running LLM-enhanced analysis with {}...",
+            llm_provider.name()
+        ));
 
         let report = SynergyReportExporter::generate(&matrix);
 
-        match crate::llm::AnthropicClient::new() {
+        match crate::llm::create_llm_client(llm_provider) {
             Ok(client) => match client.analyze_synergies(&deck_list, &matrix, &report).await {
                 Ok(result) => {
                     display_llm_insights(&result);
@@ -362,7 +370,10 @@ pub async fn handle_synergy_command(
             },
             Err(e) => {
                 display_error(&format!("Failed to initialize LLM: {e}"));
-                display_warning("Set ANTHROPIC_API_KEY in your environment.");
+                display_warning(&format!(
+                    "Set {} in your environment.",
+                    llm_provider.env_var()
+                ));
             }
         }
     }
