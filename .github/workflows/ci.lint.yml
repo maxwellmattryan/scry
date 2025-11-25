@@ -1,0 +1,24 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: clippy
+
+      - name: Lint Code
+        run: cargo +nightly clippy

@@ -1,7 +1,8 @@
 # 🌑 MTG Deck Builder
 
-[![Lint](https://github.com/maxwellmattryan/mtg/actions/workflows/lint.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/lint.yml)
-[![Format](https://github.com/maxwellmattryan/mtg/actions/workflows/format.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/format.yml)
+[![Build](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.build.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.build.yml)
+[![Lint](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.lint.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.lint.yml)
+[![Format](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.fmt.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/ci.fmt.yml)
 
 **A command-line grimoire for the discerning planeswalker.**
 
