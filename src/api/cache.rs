@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
-use super::scryfall::Card;
+use super::types::Card;
 
 const CACHE_DURATION_HOURS: u64 = 24;
 

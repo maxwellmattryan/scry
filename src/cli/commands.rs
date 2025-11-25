@@ -1,6 +1,6 @@
-use crate::api::ScryfallClient;
+use crate::api::create_client;
 use crate::calculator::{get_calculator, get_intensity_recommendations};
-use crate::cli::{AlgorithmArg, FormatArg, LlmProviderArg};
+use crate::cli::{AlgorithmArg, ApiProviderArg, FormatArg, LlmProviderArg};
 use crate::deck::{guild_name, Algorithm, Color, Deck};
 use crate::export::{JsonExporter, MarkdownExporter, SynergyReportExporter};
 use crate::input::{DeckListParser, MoxfieldClient, TextDecklistParser};
@@ -69,8 +69,13 @@ pub async fn handle_mana_command(
     }
 }
 
-pub async fn handle_card_command(name: Option<String>, id: Option<String>) {
-    let client = ScryfallClient::new();
+pub async fn handle_card_command(
+    name: Option<String>,
+    id: Option<String>,
+    api: ApiProviderArg,
+    no_fallback: bool,
+) {
+    let client = create_client(api.to_provider(), !no_fallback);
 
     let result = if let Some(card_id) = id {
         client.get_card_by_id(&card_id).await
@@ -141,7 +146,7 @@ pub async fn handle_card_command(name: Option<String>, id: Option<String>) {
             println!();
         }
         Err(e) => {
-            eprintln!("{}: {}", "Error".red(), e);
+            eprintln!("{}: {}", "Error".red(), e.message);
         }
     }
 }
@@ -248,6 +253,7 @@ fn capitalize(s: &str) -> String {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn handle_synergy_command(
     input: String,
     llm: bool,
@@ -255,6 +261,8 @@ pub async fn handle_synergy_command(
     export: Option<String>,
     json: Option<String>,
     verbose: bool,
+    api: ApiProviderArg,
+    no_fallback: bool,
 ) {
     println!();
     display_progress("Analyzing deck synergies...");
@@ -286,16 +294,18 @@ pub async fn handle_synergy_command(
         }
     };
 
-    // 2. Hydrate with Scryfall data
+    // 2. Hydrate with card data from selected provider
+    let provider = api.to_provider();
     display_progress(&format!(
-        "Fetching card data for {} cards from Scryfall...",
-        deck_list.unique_cards()
+        "Fetching card data for {} cards from {}...",
+        deck_list.unique_cards(),
+        provider.name()
     ));
 
-    let scryfall = ScryfallClient::new();
+    let client = create_client(provider, !no_fallback);
     let card_names = deck_list.card_names();
 
-    match scryfall.batch_fetch_cards(card_names).await {
+    match client.batch_fetch_cards(card_names).await {
         Ok(cards) => {
             // Match fetched cards to deck entries
             for entry in &mut deck_list.entries {
@@ -307,7 +317,8 @@ pub async fn handle_synergy_command(
             }
         }
         Err(e) => {
-            display_warning(&format!("Failed to fetch some cards: {e}"));
+            display_error(&format!("Failed to fetch card data: {}", e.message));
+            return;
         }
     }
 

@@ -39,14 +39,22 @@ pub enum Commands {
         export: Option<String>,
     },
 
-    /// Look up card information from Scryfall
+    /// Look up card information
     Card {
         /// Card name to search for
         name: Option<String>,
 
-        /// Search by Scryfall ID
+        /// Search by ID (provider-specific)
         #[arg(long)]
         id: Option<String>,
+
+        /// API provider to use
+        #[arg(long, value_enum, default_value = "scryfall")]
+        api: ApiProviderArg,
+
+        /// Disable fallback to secondary API on failure
+        #[arg(long)]
+        no_fallback: bool,
     },
 
     /// Analyze deck synergies and generate a synergy matrix
@@ -74,6 +82,14 @@ pub enum Commands {
         /// Show verbose card-by-card analysis
         #[arg(short, long)]
         verbose: bool,
+
+        /// API provider to use for card data
+        #[arg(long, value_enum, default_value = "scryfall")]
+        api: ApiProviderArg,
+
+        /// Disable fallback to secondary API on failure
+        #[arg(long)]
+        no_fallback: bool,
     },
 }
 
@@ -121,4 +137,21 @@ pub enum LlmProviderArg {
     Anthropic,
     Openai,
     Ollama,
+}
+
+/// Card API provider selection
+#[derive(Clone, Copy, ValueEnum, Default, Debug)]
+pub enum ApiProviderArg {
+    #[default]
+    Scryfall,
+    Mtgio,
+}
+
+impl ApiProviderArg {
+    pub fn to_provider(self) -> crate::api::ApiProvider {
+        match self {
+            ApiProviderArg::Scryfall => crate::api::ApiProvider::Scryfall,
+            ApiProviderArg::Mtgio => crate::api::ApiProvider::MtgIo,
+        }
+    }
 }

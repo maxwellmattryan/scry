@@ -1,127 +1,16 @@
 #![allow(dead_code)]
 
+use async_trait::async_trait;
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::cache::CardCache;
+use super::traits::{ApiError, CardApi};
+use super::types::Card;
 
 const SCRYFALL_API_BASE: &str = "https://api.scryfall.com";
 const APP_USER_AGENT: &str = "mtg-cli/0.1.0";
-
-/// A single face of a double-faced or split card
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CardFace {
-    pub name: String,
-    pub mana_cost: Option<String>,
-    pub type_line: Option<String>,
-    pub oracle_text: Option<String>,
-    pub power: Option<String>,
-    pub toughness: Option<String>,
-    pub colors: Option<Vec<String>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Card {
-    pub id: String,
-    pub name: String,
-    pub mana_cost: Option<String>,
-    pub cmc: f64,
-    #[serde(default)]
-    pub type_line: String,
-    pub oracle_text: Option<String>,
-    pub power: Option<String>,
-    pub toughness: Option<String>,
-    pub colors: Option<Vec<String>>,
-    pub color_identity: Vec<String>,
-    pub set: String,
-    pub set_name: String,
-    pub rarity: String,
-    pub prices: Option<Prices>,
-    pub legalities: HashMap<String, String>,
-    pub image_uris: Option<ImageUris>,
-    pub scryfall_uri: String,
-    /// For double-faced cards, split cards, etc.
-    pub card_faces: Option<Vec<CardFace>>,
-    /// Layout type (normal, transform, modal_dfc, split, etc.)
-    pub layout: Option<String>,
-}
-
-impl Card {
-    pub fn power_toughness(&self) -> Option<String> {
-        match (&self.power, &self.toughness) {
-            (Some(p), Some(t)) => Some(format!("{p}/{t}")),
-            _ => None,
-        }
-    }
-
-    /// Check if this is a double-faced or multi-faced card
-    pub fn is_multi_faced(&self) -> bool {
-        self.card_faces
-            .as_ref()
-            .is_some_and(|faces| faces.len() > 1)
-    }
-
-    /// Get all oracle text, including from all faces for DFCs
-    pub fn all_oracle_text(&self) -> Vec<&str> {
-        let mut texts = Vec::new();
-
-        // Add main oracle text if present
-        if let Some(text) = &self.oracle_text {
-            texts.push(text.as_str());
-        }
-
-        // Add oracle text from each face
-        if let Some(faces) = &self.card_faces {
-            for face in faces {
-                if let Some(text) = &face.oracle_text {
-                    texts.push(text.as_str());
-                }
-            }
-        }
-
-        texts
-    }
-
-    /// Get all type lines, including from all faces for DFCs
-    pub fn all_type_lines(&self) -> Vec<&str> {
-        let mut types = Vec::new();
-
-        // Add main type line
-        if !self.type_line.is_empty() {
-            types.push(self.type_line.as_str());
-        }
-
-        // Add type lines from each face
-        if let Some(faces) = &self.card_faces {
-            for face in faces {
-                if let Some(type_line) = &face.type_line {
-                    types.push(type_line.as_str());
-                }
-            }
-        }
-
-        types
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Prices {
-    pub usd: Option<String>,
-    pub usd_foil: Option<String>,
-    pub eur: Option<String>,
-    pub tix: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ImageUris {
-    pub small: Option<String>,
-    pub normal: Option<String>,
-    pub large: Option<String>,
-    pub png: Option<String>,
-    pub art_crop: Option<String>,
-    pub border_crop: Option<String>,
-}
 
 #[derive(Debug, Deserialize)]
 struct ErrorResponse {
@@ -151,7 +40,7 @@ impl ScryfallClient {
         }
     }
 
-    pub async fn search_card(&self, query: &str) -> Result<Card, String> {
+    async fn search_card_impl(&self, query: &str) -> Result<Card, ApiError> {
         // Check cache first
         if let Some(card) = self.cache.get(query) {
             return Ok(card);
@@ -168,19 +57,28 @@ impl ScryfallClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| ApiError::retryable(e.to_string()))?;
 
         if response.status().is_success() {
-            let card: Card = response.json().await.map_err(|e| e.to_string())?;
+            let card: Card = response
+                .json()
+                .await
+                .map_err(|e| ApiError::not_retryable(format!("Failed to parse response: {e}")))?;
             self.cache.set(&card.name, &card);
             Ok(card)
         } else {
-            let error: ErrorResponse = response.json().await.map_err(|e| e.to_string())?;
-            Err(format!("{}: {}", error.code, error.details))
+            let error: ErrorResponse = response
+                .json()
+                .await
+                .map_err(|e| ApiError::retryable(e.to_string()))?;
+            Err(ApiError::not_retryable(format!(
+                "{}: {}",
+                error.code, error.details
+            )))
         }
     }
 
-    pub async fn get_card_by_id(&self, id: &str) -> Result<Card, String> {
+    async fn get_card_by_id_impl(&self, id: &str) -> Result<Card, ApiError> {
         // Check cache first
         if let Some(card) = self.cache.get(id) {
             return Ok(card);
@@ -193,41 +91,31 @@ impl ScryfallClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| ApiError::retryable(e.to_string()))?;
 
         if response.status().is_success() {
-            let card: Card = response.json().await.map_err(|e| e.to_string())?;
+            let card: Card = response
+                .json()
+                .await
+                .map_err(|e| ApiError::not_retryable(format!("Failed to parse response: {e}")))?;
             self.cache.set(&card.id, &card);
             Ok(card)
         } else {
-            let error: ErrorResponse = response.json().await.map_err(|e| e.to_string())?;
-            Err(format!("{}: {}", error.code, error.details))
+            let error: ErrorResponse = response
+                .json()
+                .await
+                .map_err(|e| ApiError::retryable(e.to_string()))?;
+            Err(ApiError::not_retryable(format!(
+                "{}: {}",
+                error.code, error.details
+            )))
         }
     }
-}
 
-/// Identifier for batch card fetching
-#[derive(Debug, Clone, Serialize)]
-#[serde(untagged)]
-pub enum CardIdentifier {
-    Name { name: String },
-    Id { id: String },
-}
-
-/// Response from the /cards/collection endpoint
-#[derive(Debug, Deserialize)]
-struct CollectionResponse {
-    data: Vec<Card>,
-    not_found: Vec<serde_json::Value>,
-}
-
-impl ScryfallClient {
-    /// Fetch multiple cards by name using the /cards/collection endpoint
-    /// This is much faster than individual requests (up to 75 cards per request)
-    pub async fn batch_fetch_cards(
+    async fn batch_fetch_cards_impl(
         &self,
         names: Vec<String>,
-    ) -> Result<HashMap<String, Card>, String> {
+    ) -> Result<HashMap<String, Card>, ApiError> {
         let mut results = HashMap::new();
         let mut uncached_names = Vec::new();
 
@@ -260,18 +148,20 @@ impl ScryfallClient {
                 .json(&serde_json::json!({ "identifiers": identifiers }))
                 .send()
                 .await
-                .map_err(|e| format!("Batch fetch failed: {e}"))?;
+                .map_err(|e| ApiError::retryable(format!("Batch fetch failed: {e}")))?;
 
             if !response.status().is_success() {
                 let status = response.status();
                 let error_text = response.text().await.unwrap_or_default();
-                return Err(format!("Scryfall API error ({status}): {error_text}"));
+                return Err(ApiError::retryable(format!(
+                    "Scryfall API error ({status}): {error_text}"
+                )));
             }
 
             let collection: CollectionResponse = response
                 .json()
                 .await
-                .map_err(|e| format!("Failed to parse response: {e}"))?;
+                .map_err(|e| ApiError::not_retryable(format!("Failed to parse response: {e}")))?;
 
             // Add fetched cards to results and cache
             for card in collection.data {
@@ -294,6 +184,43 @@ impl ScryfallClient {
 
         Ok(results)
     }
+}
+
+#[async_trait]
+impl CardApi for ScryfallClient {
+    fn name(&self) -> &'static str {
+        "Scryfall"
+    }
+
+    async fn search_card(&self, query: &str) -> Result<Card, ApiError> {
+        self.search_card_impl(query).await
+    }
+
+    async fn get_card_by_id(&self, id: &str) -> Result<Card, ApiError> {
+        self.get_card_by_id_impl(id).await
+    }
+
+    async fn batch_fetch_cards(
+        &self,
+        names: Vec<String>,
+    ) -> Result<HashMap<String, Card>, ApiError> {
+        self.batch_fetch_cards_impl(names).await
+    }
+}
+
+/// Identifier for batch card fetching
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+pub enum CardIdentifier {
+    Name { name: String },
+    Id { id: String },
+}
+
+/// Response from the /cards/collection endpoint
+#[derive(Debug, Deserialize)]
+struct CollectionResponse {
+    data: Vec<Card>,
+    not_found: Vec<serde_json::Value>,
 }
 
 impl Default for ScryfallClient {

@@ -27,8 +27,13 @@ async fn main() {
         }) => {
             handle_mana_command(format, algorithm, colors, cards, lands, export).await;
         }
-        Some(Commands::Card { name, id }) => {
-            handle_card_command(name, id).await;
+        Some(Commands::Card {
+            name,
+            id,
+            api,
+            no_fallback,
+        }) => {
+            handle_card_command(name, id, api, no_fallback).await;
         }
         Some(Commands::Synergy {
             input,
@@ -37,8 +42,20 @@ async fn main() {
             export,
             json,
             verbose,
+            api,
+            no_fallback,
         }) => {
-            handle_synergy_command(input, llm, provider, export, json, verbose).await;
+            handle_synergy_command(
+                input,
+                llm,
+                provider,
+                export,
+                json,
+                verbose,
+                api,
+                no_fallback,
+            )
+            .await;
         }
         None => {
             print_help();
