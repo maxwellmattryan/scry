@@ -269,6 +269,13 @@ impl ThemeAnalysis {
     }
 }
 
+/// Info about a card with no synergies
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrphanCard {
+    pub name: String,
+    pub reason: String,
+}
+
 /// Statistics about the deck's synergies
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SynergyStats {
@@ -276,8 +283,8 @@ pub struct SynergyStats {
     pub synergy_density: f64,
     /// Percentage of cards in at least one theme
     pub theme_coverage: f64,
-    /// Cards with no synergy connections
-    pub orphan_cards: Vec<String>,
+    /// Cards with no synergy connections (with reasons)
+    pub orphan_cards: Vec<OrphanCard>,
     /// Cards with most connections
     pub hub_cards: Vec<String>,
     /// How focused the themes are (higher = more focused)

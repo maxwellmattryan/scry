@@ -7,8 +7,8 @@ use crate::input::DeckList;
 use super::keywords::{extract_creature_types, extract_keywords, is_creature};
 use super::themes::{classify_card_role, detect_card_themes, detect_tribal_themes};
 use super::types::{
-    CardSynergyProfile, SynergyEdge, SynergyMatrix, SynergyRelation, SynergyStats, Theme,
-    ThemeAnalysis,
+    CardSynergyProfile, OrphanCard, SynergyEdge, SynergyMatrix, SynergyRelation, SynergyStats,
+    Theme, ThemeAnalysis,
 };
 
 /// Trait for synergy detection implementations
@@ -242,16 +242,29 @@ impl RuleBasedDetector {
         // Cards with themes
         let themed_count = profiles.values().filter(|p| !p.themes.is_empty()).count();
 
-        // Find orphan cards (no synergies)
+        // Find orphan cards (no synergies) with reasons
         let cards_in_edges: std::collections::HashSet<_> = edges
             .iter()
             .flat_map(|e| vec![e.card_a.clone(), e.card_b.clone()])
             .collect();
 
-        let orphan_cards: Vec<String> = profiles
-            .keys()
-            .filter(|name| !cards_in_edges.contains(*name))
-            .cloned()
+        let orphan_cards: Vec<OrphanCard> = profiles
+            .iter()
+            .filter(|(name, _)| !cards_in_edges.contains(*name))
+            .map(|(name, profile)| {
+                let reason = if profile.themes.is_empty() {
+                    "no detected themes".to_string()
+                } else {
+                    // Has themes but still no edges - theme too small
+                    let theme_names: Vec<_> =
+                        profile.themes.iter().map(|t| t.display_name()).collect();
+                    format!("theme(s) too small: {}", theme_names.join(", "))
+                };
+                OrphanCard {
+                    name: name.clone(),
+                    reason,
+                }
+            })
             .collect();
 
         // Find hub cards (most edges)
@@ -339,9 +352,10 @@ impl RuleBasedDetector {
 
         // Orphan card observations
         if !stats.orphan_cards.is_empty() && stats.orphan_cards.len() <= 5 {
+            let names: Vec<_> = stats.orphan_cards.iter().map(|o| o.name.as_str()).collect();
             observations.push(format!(
                 "Cards with no detected synergies: {}",
-                stats.orphan_cards.join(", ")
+                names.join(", ")
             ));
         } else if stats.orphan_cards.len() > 5 {
             observations.push(format!(

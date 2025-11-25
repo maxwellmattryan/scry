@@ -113,8 +113,8 @@ impl SynergyReportExporter {
         // Orphan Cards
         if !matrix.stats.orphan_cards.is_empty() {
             output.push_str("### Cards with No Synergies\n\n");
-            for card in &matrix.stats.orphan_cards {
-                output.push_str(&format!("- {card}\n"));
+            for orphan in &matrix.stats.orphan_cards {
+                output.push_str(&format!("- {} ({})\n", orphan.name, orphan.reason));
             }
             output.push('\n');
         }

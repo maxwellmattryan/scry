@@ -69,14 +69,26 @@ pub fn display_synergy_matrix(matrix: &SynergyMatrix, verbose: bool) {
         matrix.stats.theme_coverage * 100.0
     );
     println!(
+        "    {}",
+        "(% of cards belonging to at least one theme)".dimmed()
+    );
+    println!(
         "  {}: {:.1}%",
         "Synergy Density".yellow(),
         matrix.stats.synergy_density * 100.0
     );
     println!(
+        "    {}",
+        "(% of possible card pairings that synergize)".dimmed()
+    );
+    println!(
         "  {}: {}",
         "Synergy Connections".yellow(),
         matrix.edges.len()
+    );
+    println!(
+        "    {}",
+        "(total card-to-card synergy links detected)".dimmed()
     );
     println!();
 
@@ -94,8 +106,12 @@ pub fn display_synergy_matrix(matrix: &SynergyMatrix, verbose: bool) {
         let orphan_count = matrix.stats.orphan_cards.len();
         if orphan_count <= 10 {
             println!("{}", "Cards with No Synergies:".yellow());
-            for card in &matrix.stats.orphan_cards {
-                println!("  - {}", card.dimmed());
+            for orphan in &matrix.stats.orphan_cards {
+                println!(
+                    "  - {} {}",
+                    orphan.name.dimmed(),
+                    format!("({})", orphan.reason).dimmed()
+                );
             }
         } else {
             println!(
@@ -103,6 +119,15 @@ pub fn display_synergy_matrix(matrix: &SynergyMatrix, verbose: bool) {
                 "Note".yellow(),
                 orphan_count
             );
+            if verbose {
+                for orphan in &matrix.stats.orphan_cards {
+                    println!(
+                        "  - {} {}",
+                        orphan.name.dimmed(),
+                        format!("({})", orphan.reason).dimmed()
+                    );
+                }
+            }
         }
         println!();
     }
