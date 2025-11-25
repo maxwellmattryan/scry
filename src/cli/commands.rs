@@ -9,7 +9,7 @@ use colored::Colorize;
 
 use super::interactive::{run_interactive_mana_flow, InteractiveConfig};
 use super::synergy_display::{
-    display_error, display_progress, display_synergy_matrix, display_warning,
+    display_error, display_llm_insights, display_progress, display_synergy_matrix, display_warning,
 };
 
 pub async fn handle_mana_command(
@@ -322,18 +322,35 @@ pub async fn handle_synergy_command(
         deck_list.entries.len()
     ));
 
-    // 3. Check for LLM mode (not yet implemented)
-    if llm {
-        display_warning("LLM-enhanced analysis is not yet implemented. Using rule-based analysis.");
-    }
-
-    // 4. Run synergy analysis
+    // 3. Run synergy analysis
     display_progress("Running synergy analysis...");
     let detector = get_detector();
     let matrix = detector.analyze(&deck_list);
 
-    // 5. Display results
+    // 4. Display results
     display_synergy_matrix(&matrix, verbose);
+
+    // 5. Run LLM-enhanced analysis if requested
+    if llm {
+        display_progress("Running LLM-enhanced analysis...");
+
+        let report = SynergyReportExporter::generate(&matrix);
+
+        match crate::llm::AnthropicClient::new() {
+            Ok(client) => match client.analyze_synergies(&deck_list, &matrix, &report).await {
+                Ok(result) => {
+                    display_llm_insights(&result);
+                }
+                Err(e) => {
+                    display_error(&format!("LLM analysis failed: {e}"));
+                }
+            },
+            Err(e) => {
+                display_error(&format!("Failed to initialize LLM: {e}"));
+                display_warning("Set ANTHROPIC_API_KEY in your environment.");
+            }
+        }
+    }
 
     // 6. Export if requested
     if let Some(path) = export {

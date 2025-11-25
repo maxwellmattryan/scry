@@ -1,5 +1,6 @@
 use colored::Colorize;
 
+use crate::llm::LlmAnalysisResult;
 use crate::synergy::SynergyMatrix;
 
 /// Display synergy analysis results in the terminal
@@ -222,4 +223,30 @@ pub fn display_error(message: &str) {
 /// Display a warning message
 pub fn display_warning(message: &str) {
     eprintln!("{}: {}", "Warning".yellow(), message);
+}
+
+/// Convert literal \x1b sequences to actual ANSI escape codes
+fn process_ansi_codes(text: &str) -> String {
+    text.replace("\\x1b[", "\x1b[")
+}
+
+/// Display LLM analysis insights
+pub fn display_llm_insights(result: &LlmAnalysisResult) {
+    println!();
+    println!("{}", "=== AI-ENHANCED INSIGHTS ===".bold().magenta());
+    println!();
+
+    // Convert literal \x1b sequences to actual ANSI escape codes
+    let formatted = process_ansi_codes(&result.full_response);
+    print!("{formatted}");
+
+    println!();
+    println!(
+        "{}",
+        format!(
+            "Tokens: {} in / {} out",
+            result.input_tokens, result.output_tokens
+        )
+        .dimmed()
+    );
 }

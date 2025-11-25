@@ -4,6 +4,7 @@ mod cli;
 mod deck;
 mod export;
 mod input;
+mod llm;
 mod synergy;
 
 use clap::Parser;
