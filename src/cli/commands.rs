@@ -263,6 +263,7 @@ pub async fn handle_synergy_command(
     verbose: bool,
     api: ApiProviderArg,
     no_fallback: bool,
+    excludes_lands: bool,
 ) {
     println!();
     display_progress("Analyzing deck synergies...");
@@ -293,6 +294,9 @@ pub async fn handle_synergy_command(
             }
         }
     };
+
+    // Set the excludes_lands flag from CLI
+    deck_list.excludes_lands = excludes_lands;
 
     // 2. Hydrate with card data from selected provider
     let provider = api.to_provider();

@@ -90,6 +90,10 @@ pub enum Commands {
         /// Disable fallback to secondary API on failure
         #[arg(long)]
         no_fallback: bool,
+
+        /// Indicates the decklist excludes basic lands (common when exporting from Moxfield)
+        #[arg(long)]
+        excludes_lands: bool,
     },
 }
 

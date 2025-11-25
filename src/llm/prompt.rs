@@ -96,6 +96,11 @@ Remember to use ANSI escape codes for formatting as specified in your instructio
 fn format_deck_list(deck: &DeckList) -> String {
     let mut output = String::new();
 
+    // Add note if basic lands are excluded
+    if deck.excludes_lands {
+        output.push_str("**Note:** This decklist intentionally excludes basic lands. The user exports decks without basic lands (common practice on Moxfield). Do NOT suggest adding basic lands or flag the deck as incomplete due to missing lands.\n\n");
+    }
+
     // Commander(s) first
     let commanders: Vec<_> = deck.commanders().collect();
     if !commanders.is_empty() {

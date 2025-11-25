@@ -43,6 +43,8 @@ pub struct DeckList {
     pub format: Option<String>,
     pub entries: Vec<DeckEntry>,
     pub source: DeckSource,
+    /// Indicates the decklist intentionally excludes basic lands (common when exporting from Moxfield)
+    pub excludes_lands: bool,
 }
 
 impl DeckList {
@@ -53,6 +55,7 @@ impl DeckList {
             format: None,
             entries: Vec::new(),
             source,
+            excludes_lands: false,
         }
     }
 

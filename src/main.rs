@@ -44,6 +44,7 @@ async fn main() {
             verbose,
             api,
             no_fallback,
+            excludes_lands,
         }) => {
             handle_synergy_command(
                 input,
@@ -54,6 +55,7 @@ async fn main() {
                 verbose,
                 api,
                 no_fallback,
+                excludes_lands,
             )
             .await;
         }
