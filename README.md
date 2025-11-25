@@ -1,4 +1,4 @@
-# 🌑 Magic: The Gathering CLI Tool
+# 🔮 Scry
 
 [![Build](https://github.com/maxwellmattryan/scry/actions/workflows/ci.build.yml/badge.svg)](https://github.com/maxwellmattryan/scry/actions/workflows/ci.build.yml)
 [![Lint](https://github.com/maxwellmattryan/scry/actions/workflows/ci.lint.yml/badge.svg)](https://github.com/maxwellmattryan/scry/actions/workflows/ci.lint.yml)
@@ -6,7 +6,7 @@
 
 **A command-line grimoire for the discerning planeswalker.**
 
-Channel the arcane mathematics of mana base construction. Scry the Multiverse for card knowledge. All from the depths of your terminal.
+Peer into the top cards of your library—powered by Rust, enlightened by the Multiverse. Scry combines the arcane mathematics of mana base construction with real-time card data from the aether. All from the depths of your terminal.
 
 ---
 
@@ -14,14 +14,14 @@ Channel the arcane mathematics of mana base construction. Scry the Multiverse fo
 
 | | |
 |---|---|
-| **Mana Base Calculator** | Divine the optimal land distribution through ancient algorithmic arts |
-| **Card Lookup** | Peer into the Scryfall and MTG.io archives — prices, legalities, oracle text revealed |
-| **Synergy Analysis** | Uncover hidden connections and interactions between cards in your deck |
-| **Format Presets** | Commander, Standard, Modern, Limited, or forge your own Custom path |
-| **Multiple Algorithms** | Simple proportional, CMC-weighted, or hypergeometric calculations |
-| **LLM Enhancement** | Harness AI to detect deeper synergies beyond keyword matching |
-| **Interactive Mode** | Let the tool guide you through the ritual with `scry mana` |
-| **Export Results** | Inscribe your findings to Markdown or JSON scrolls |
+| **Mana Base Calculator** | Divine optimal land distribution through algorithmic sorcery |
+| **Card Lookup** | Query the Scryfall and MTG.io APIs — prices, legalities, oracle text revealed |
+| **Synergy Analysis** | Parse your decklist to uncover hidden interactions and combo lines |
+| **Format Presets** | Commander, Standard, Modern, Limited, or compile your own Custom config |
+| **Multiple Algorithms** | Simple proportional, CMC-weighted, or hypergeometric probability engines |
+| **LLM Enhancement** | Neural networks trained on the Multiverse detect synergies beyond regex |
+| **Interactive Mode** | Let Scry guide you through the ritual with intelligent prompts |
+| **Export Results** | Serialize your findings to Markdown or JSON artifacts |
 
 ---
 
@@ -44,7 +44,7 @@ cargo build --release
 cargo install --path .
 ```
 
-This binds the `scry` command to your shell, accessible from any realm.
+This binds the `scry` binary to your shell environment, accessible from any realm.
 
 ---
 
@@ -52,7 +52,7 @@ This binds the `scry` command to your shell, accessible from any realm.
 
 ### Mana Calculator
 
-**Interactive mode** — the tool guides your hand:
+**Interactive mode** — Scry guides your hand:
 ```bash
 scry mana
 ```
@@ -83,14 +83,14 @@ scry mana --format commander --colors WUBRG --export manabase.md
 ### Card Lookup
 
 ```bash
-# Seek by name (fuzzy matching penetrates minor misspellings)
+# Seek by name (fuzzy search handles minor typos)
 scry card "Lightning Bolt"
 
-# Divine by Scryfall ID
+# Query by Scryfall ID
 scry card --id <scryfall-uuid>
 
-# Query the scry.io API instead
-scry card "Sol Ring" --api scryio
+# Hit the mtg.io API instead
+scry card "Sol Ring" --api mtgio
 
 # Disable fallback to secondary API
 scry card "Mox Ruby" --no-fallback
@@ -104,7 +104,7 @@ scry card "Mox Ruby" --no-fallback
 
 ### Synergy Analysis
 
-Uncover the hidden connections between your cards:
+Parse your decklist and uncover hidden combo potential:
 ```bash
 # Analyze a decklist file
 scry synergy --input deck.txt
@@ -112,13 +112,13 @@ scry synergy --input deck.txt
 # Analyze a Moxfield deck URL
 scry synergy --input "https://www.moxfield.com/decks/..."
 
-# Enhanced analysis with LLM
+# Enhanced analysis with LLM backend
 scry synergy --input deck.txt --llm --provider anthropic
 
-# Export detailed analysis
+# Export detailed analysis to markdown
 scry synergy --input deck.txt --export synergies.md --verbose
 
-# Export to JSON for programmatic use
+# Serialize to JSON for programmatic consumption
 scry synergy --input deck.txt --json synergies.json
 
 # For decklists exported from Moxfield (without basic lands)
@@ -157,17 +157,17 @@ The five pillars of mana, plus the void:
 
 ## 📜 Dependencies
 
-The ancient tomes upon which this work is built:
+The crates and ancient tomes upon which Scry is compiled:
 
 | Crate | Purpose |
 |-------|---------|
-| `clap` | Argument parsing |
-| `dialoguer` | Interactive prompts |
-| `reqwest` | Scryfall API communion |
-| `tokio` | Async runtime |
-| `serde` | Serialization rites |
-| `colored` | Terminal enchantments |
-| `chrono` | Temporal bindings |
+| `clap` | CLI argument parsing |
+| `dialoguer` | Interactive prompt rendering |
+| `reqwest` | HTTP client for API communion |
+| `tokio` | Async runtime engine |
+| `serde` | Serialization and deserialization |
+| `colored` | ANSI terminal enchantments |
+| `chrono` | Temporal type bindings |
 
 ---
 
