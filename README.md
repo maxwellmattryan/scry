@@ -1,5 +1,8 @@
 # 🌑 MTG Deck Builder
 
+[![Lint](https://github.com/maxwellmattryan/mtg/actions/workflows/lint.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/lint.yml)
+[![Format](https://github.com/maxwellmattryan/mtg/actions/workflows/format.yml/badge.svg)](https://github.com/maxwellmattryan/mtg/actions/workflows/format.yml)
+
 **A command-line grimoire for the discerning planeswalker.**
 
 Channel the arcane mathematics of mana base construction. Scry the Multiverse for card knowledge. All from the depths of your terminal.
@@ -23,7 +26,7 @@ Channel the arcane mathematics of mana base construction. Scry the Multiverse fo
 
 ```bash
 # Summon the repository
-git clone <repository-url>
+git clone https://github.com/maxwellmattryan/mtg.git
 cd mtg
 
 # Forge the binary
@@ -32,6 +35,13 @@ cargo build --release
 # Your artifact awaits at:
 ./target/release/mtg
 ```
+
+**Or install directly to your PATH:**
+```bash
+cargo install --path .
+```
+
+This binds the `mtg` command to your shell, accessible from any realm.
 
 ---
 
