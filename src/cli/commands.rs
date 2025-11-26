@@ -1,16 +1,87 @@
-use crate::api::create_client;
+use crate::api::{create_client, ApiProvider};
 use crate::calculator::{get_calculator, get_intensity_recommendations};
 use crate::cli::{AlgorithmArg, ApiProviderArg, FormatArg, LlmProviderArg};
+use crate::curve::CurveAnalyzer;
 use crate::deck::{guild_name, Algorithm, Color, Deck};
-use crate::export::{JsonExporter, MarkdownExporter, SynergyReportExporter};
-use crate::input::{DeckListParser, MoxfieldClient, TextDecklistParser};
+use crate::export::{CurveReportExporter, JsonExporter, MarkdownExporter, SynergyReportExporter};
+use crate::input::{DeckList, DeckListParser, MoxfieldClient, TextDecklistParser};
 use crate::synergy::get_detector;
 use colored::Colorize;
 
+use super::curve_display::display_curve_analysis;
 use super::interactive::{run_interactive_mana_flow, InteractiveConfig};
 use super::synergy_display::{
     display_error, display_llm_insights, display_progress, display_synergy_matrix, display_warning,
 };
+
+/// Shared helper to parse and hydrate a decklist from file or Moxfield URL
+pub async fn parse_and_hydrate_deck(
+    input: &str,
+    api_provider: ApiProvider,
+    no_fallback: bool,
+    excludes_lands: bool,
+) -> Result<DeckList, String> {
+    // 1. Parse the decklist
+    let mut deck_list = if input.contains("moxfield.com")
+        || MoxfieldClient::extract_deck_id(input).is_some() && !std::path::Path::new(input).exists()
+    {
+        display_progress("Fetching deck from Moxfield...");
+        let client = MoxfieldClient::new();
+        client
+            .parse(input)
+            .await
+            .map_err(|e| format!("Failed to fetch from Moxfield: {e}"))?
+    } else {
+        display_progress("Parsing decklist file...");
+        let parser = TextDecklistParser::new();
+        parser
+            .parse(input)
+            .await
+            .map_err(|e| format!("Failed to parse decklist: {e}"))?
+    };
+
+    // Set the excludes_lands flag from CLI
+    deck_list.excludes_lands = excludes_lands;
+
+    // 2. Hydrate with card data from selected provider
+    display_progress(&format!(
+        "Fetching card data for {} cards from {}...",
+        deck_list.unique_cards(),
+        api_provider.name()
+    ));
+
+    let client = create_client(api_provider, !no_fallback);
+    let card_names = deck_list.card_names();
+
+    match client.batch_fetch_cards(card_names).await {
+        Ok(cards) => {
+            // Match fetched cards to deck entries
+            for entry in &mut deck_list.entries {
+                if let Some(card) = cards.get(&entry.card_name) {
+                    entry.card = Some(card.clone());
+                } else {
+                    display_warning(&format!("Card not found: {}", entry.card_name));
+                }
+            }
+        }
+        Err(e) => {
+            return Err(format!("Failed to fetch card data: {}", e.message));
+        }
+    }
+
+    let hydrated_count = deck_list
+        .entries
+        .iter()
+        .filter(|e| e.card.is_some())
+        .count();
+    display_progress(&format!(
+        "Hydrated {} of {} cards",
+        hydrated_count,
+        deck_list.entries.len()
+    ));
+
+    Ok(deck_list)
+}
 
 pub async fn handle_mana_command(
     format: Option<FormatArg>,
@@ -269,75 +340,23 @@ pub async fn handle_synergy_command(
     display_progress("Analyzing deck synergies...");
     println!();
 
-    // 1. Parse the decklist
-    let mut deck_list = if input.contains("moxfield.com")
-        || MoxfieldClient::extract_deck_id(&input).is_some()
-            && !std::path::Path::new(&input).exists()
+    // Parse and hydrate the deck using shared helper
+    let deck_list = match parse_and_hydrate_deck(
+        &input,
+        api.to_provider(),
+        no_fallback,
+        excludes_lands,
+    )
+    .await
     {
-        display_progress("Fetching deck from Moxfield...");
-        let client = MoxfieldClient::new();
-        match client.parse(&input).await {
-            Ok(deck) => deck,
-            Err(e) => {
-                display_error(&format!("Failed to fetch from Moxfield: {e}"));
-                return;
-            }
-        }
-    } else {
-        display_progress("Parsing decklist file...");
-        let parser = TextDecklistParser::new();
-        match parser.parse(&input).await {
-            Ok(deck) => deck,
-            Err(e) => {
-                display_error(&format!("Failed to parse decklist: {e}"));
-                return;
-            }
+        Ok(deck) => deck,
+        Err(e) => {
+            display_error(&e);
+            return;
         }
     };
 
-    // Set the excludes_lands flag from CLI
-    deck_list.excludes_lands = excludes_lands;
-
-    // 2. Hydrate with card data from selected provider
-    let provider = api.to_provider();
-    display_progress(&format!(
-        "Fetching card data for {} cards from {}...",
-        deck_list.unique_cards(),
-        provider.name()
-    ));
-
-    let client = create_client(provider, !no_fallback);
-    let card_names = deck_list.card_names();
-
-    match client.batch_fetch_cards(card_names).await {
-        Ok(cards) => {
-            // Match fetched cards to deck entries
-            for entry in &mut deck_list.entries {
-                if let Some(card) = cards.get(&entry.card_name) {
-                    entry.card = Some(card.clone());
-                } else {
-                    display_warning(&format!("Card not found: {}", entry.card_name));
-                }
-            }
-        }
-        Err(e) => {
-            display_error(&format!("Failed to fetch card data: {}", e.message));
-            return;
-        }
-    }
-
-    let hydrated_count = deck_list
-        .entries
-        .iter()
-        .filter(|e| e.card.is_some())
-        .count();
-    display_progress(&format!(
-        "Hydrated {} of {} cards",
-        hydrated_count,
-        deck_list.entries.len()
-    ));
-
-    // 3. Run synergy analysis
+    // Run synergy analysis
     display_progress("Running synergy analysis...");
     let detector = get_detector();
     let matrix = detector.analyze(&deck_list);
@@ -394,6 +413,59 @@ pub async fn handle_synergy_command(
     }
 }
 
+pub async fn handle_curve_command(
+    input: String,
+    by_type: bool,
+    export: Option<String>,
+    json: Option<String>,
+    api: ApiProviderArg,
+    no_fallback: bool,
+    excludes_lands: bool,
+) {
+    println!();
+    display_progress("Analyzing mana curve...");
+    println!();
+
+    // Parse and hydrate the deck using shared helper
+    let deck_list = match parse_and_hydrate_deck(
+        &input,
+        api.to_provider(),
+        no_fallback,
+        excludes_lands,
+    )
+    .await
+    {
+        Ok(deck) => deck,
+        Err(e) => {
+            display_error(&e);
+            return;
+        }
+    };
+
+    // Run curve analysis
+    display_progress("Calculating mana curve...");
+    let analyzer = CurveAnalyzer::new();
+    let analysis = analyzer.analyze(&deck_list);
+
+    // Display results
+    display_curve_analysis(&analysis, by_type);
+
+    // Export if requested
+    if let Some(path) = export {
+        match CurveReportExporter::export(&analysis, &path) {
+            Ok(_) => println!("{}", format!("Report saved to: {path}").green()),
+            Err(e) => display_error(&format!("Failed to export: {e}")),
+        }
+    }
+
+    if let Some(path) = json {
+        match JsonExporter::export(&analysis, &path) {
+            Ok(_) => println!("{}", format!("JSON saved to: {path}").green()),
+            Err(e) => display_error(&format!("Failed to export JSON: {e}")),
+        }
+    }
+}
+
 pub fn print_help() {
     println!(
         "{}",
@@ -418,6 +490,10 @@ pub fn print_help() {
         "    {} Analyze deck synergies from a decklist",
         "synergy".green()
     );
+    println!(
+        "    {}   Analyze deck mana curve distribution",
+        "curve".green()
+    );
     println!("    {}    Print this help message", "help".green());
     println!();
     println!("{}", "EXAMPLES:".yellow());
@@ -428,6 +504,8 @@ pub fn print_help() {
     println!("    scry card --id <scryfall-id>        # Look up a card by ID");
     println!("    scry synergy -i deck.txt            # Analyze synergies from file");
     println!("    scry synergy -i https://moxfield.com/decks/xyz  # From Moxfield");
+    println!("    scry curve -i deck.txt              # Analyze mana curve from file");
+    println!("    scry curve -i deck.txt --by-type    # Show creatures vs non-creatures");
     println!();
     println!("{}", "For more information on a command, run:".dimmed());
     println!("    scry <COMMAND> --help");

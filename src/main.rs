@@ -1,6 +1,7 @@
 mod api;
 mod calculator;
 mod cli;
+mod curve;
 mod deck;
 mod export;
 mod input;
@@ -9,7 +10,8 @@ mod synergy;
 
 use clap::Parser;
 use cli::{
-    handle_card_command, handle_mana_command, handle_synergy_command, print_help, Cli, Commands,
+    handle_card_command, handle_curve_command, handle_mana_command, handle_synergy_command,
+    print_help, Cli, Commands,
 };
 
 #[tokio::main]
@@ -53,6 +55,26 @@ async fn main() {
                 export,
                 json,
                 verbose,
+                api,
+                no_fallback,
+                excludes_lands,
+            )
+            .await;
+        }
+        Some(Commands::Curve {
+            input,
+            by_type,
+            export,
+            json,
+            api,
+            no_fallback,
+            excludes_lands,
+        }) => {
+            handle_curve_command(
+                input,
+                by_type,
+                export,
+                json,
                 api,
                 no_fallback,
                 excludes_lands,

@@ -95,6 +95,37 @@ pub enum Commands {
         #[arg(long)]
         excludes_lands: bool,
     },
+
+    /// Analyze deck mana curve distribution
+    Curve {
+        /// Path to decklist file or Moxfield URL
+        #[arg(short, long)]
+        input: String,
+
+        /// Show creatures vs non-creatures separately
+        #[arg(long)]
+        by_type: bool,
+
+        /// Export results to markdown file
+        #[arg(short, long)]
+        export: Option<String>,
+
+        /// Export results to JSON file
+        #[arg(long)]
+        json: Option<String>,
+
+        /// API provider to use for card data
+        #[arg(long, value_enum, default_value = "scryfall")]
+        api: ApiProviderArg,
+
+        /// Disable fallback to secondary API on failure
+        #[arg(long)]
+        no_fallback: bool,
+
+        /// Indicates the decklist excludes basic lands (common when exporting from Moxfield)
+        #[arg(long)]
+        excludes_lands: bool,
+    },
 }
 
 #[derive(Clone, Copy, ValueEnum)]

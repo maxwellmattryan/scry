@@ -17,6 +17,7 @@ Peer into the top cards of your library—powered by Rust, enlightened by the Mu
 | **Mana Base Calculator** | Divine optimal land distribution through algorithmic sorcery |
 | **Card Lookup** | Query the Scryfall and MTG.io APIs — prices, legalities, oracle text revealed |
 | **Synergy Analysis** | Parse your decklist to uncover hidden interactions and combo lines |
+| **Mana Curve Analysis** | Visualize your deck's CMC distribution with ASCII histograms and statistics |
 | **Format Presets** | Commander, Standard, Modern, Limited, or compile your own Custom config |
 | **Multiple Algorithms** | Simple proportional, CMC-weighted, or hypergeometric probability engines |
 | **LLM Enhancement** | Neural networks trained on the Multiverse detect synergies beyond regex |
@@ -132,6 +133,36 @@ scry synergy --input moxfield-deck.txt --excludes-lands
 - `-e, --export <FILE>` — Export results to markdown file
 - `--json <FILE>` — Export results to JSON file
 - `-v, --verbose` — Show detailed card-by-card analysis
+- `--api <API>` — API provider for card data: `scryfall` (default), `mtgio`
+- `--no-fallback` — Disable fallback to secondary API on failure
+- `--excludes-lands` — Indicates decklist excludes basic lands
+
+### Mana Curve Analysis
+
+Visualize your deck's mana curve distribution:
+```bash
+# Analyze a decklist file
+scry curve --input deck.txt
+
+# Analyze a Moxfield deck URL
+scry curve --input "https://www.moxfield.com/decks/..."
+
+# Show creatures vs non-creatures separately
+scry curve --input deck.txt --by-type
+
+# Export to markdown or JSON
+scry curve --input deck.txt --export curve.md
+scry curve --input deck.txt --json curve.json
+
+# For decklists exported from Moxfield (without basic lands)
+scry curve --input moxfield-deck.txt --excludes-lands
+```
+
+**Available options:**
+- `-i, --input <INPUT>` — Path to decklist file or Moxfield URL (required)
+- `--by-type` — Show creatures vs non-creatures separately in histogram
+- `-e, --export <FILE>` — Export results to markdown file
+- `--json <FILE>` — Export results to JSON file
 - `--api <API>` — API provider for card data: `scryfall` (default), `mtgio`
 - `--no-fallback` — Disable fallback to secondary API on failure
 - `--excludes-lands` — Indicates decklist excludes basic lands
