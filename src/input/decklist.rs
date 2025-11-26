@@ -14,18 +14,13 @@ pub struct DeckEntry {
 }
 
 /// The section of the deck a card belongs to
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum DeckSection {
     Commander,
+    #[default]
     Mainboard,
     Sideboard,
     Maybeboard,
-}
-
-impl Default for DeckSection {
-    fn default() -> Self {
-        Self::Mainboard
-    }
 }
 
 /// The source of a decklist

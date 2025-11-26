@@ -91,7 +91,7 @@ impl CurveAnalyzer {
         // Median
         let mut sorted_cmcs = all_cmcs.to_vec();
         sorted_cmcs.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        let median_cmc = if sorted_cmcs.len() % 2 == 0 {
+        let median_cmc = if sorted_cmcs.len().is_multiple_of(2) {
             let mid = sorted_cmcs.len() / 2;
             (sorted_cmcs[mid - 1] + sorted_cmcs[mid]) / 2.0
         } else {

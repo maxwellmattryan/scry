@@ -163,23 +163,75 @@ pub async fn handle_card_command(
             println!("{}", card.name.bold().cyan());
             println!("{}", "─".repeat(40));
 
-            if let Some(cost) = &card.mana_cost {
-                println!("{}: {}", "Mana Cost".yellow(), cost);
-            }
+            // Check if this is a double-faced card
+            if let Some(faces) = &card.card_faces {
+                // Display each face
+                for (i, face) in faces.iter().enumerate() {
+                    if i > 0 {
+                        println!();
+                        println!("{}", "─".repeat(40));
+                    }
 
-            println!("{}: {}", "Type".yellow(), card.type_line);
+                    println!("{}", face.name.bold().cyan());
 
-            if let Some(text) = &card.oracle_text {
-                println!();
-                println!("{}", "Oracle Text:".yellow());
-                for line in text.lines() {
-                    println!("  {line}");
+                    if let Some(cost) = &face.mana_cost {
+                        println!("{}: {}", "Mana Cost".yellow(), mana_cost_to_emoji(cost));
+                    }
+
+                    if let Some(colors) = &face.colors {
+                        if !colors.is_empty() {
+                            let color_names: Vec<_> =
+                                colors.iter().map(|c| color_to_name(c)).collect();
+                            println!("{}: {}", "Colors".yellow(), color_names.join(", "));
+                        }
+                    }
+
+                    if let Some(type_line) = &face.type_line {
+                        println!("{}: {}", "Type".yellow(), type_line);
+                    }
+
+                    if let Some(text) = &face.oracle_text {
+                        println!();
+                        println!("{}", "Oracle Text:".yellow());
+                        for line in text.lines() {
+                            println!("  {line}");
+                        }
+                    }
+
+                    if let (Some(p), Some(t)) = (&face.power, &face.toughness) {
+                        println!();
+                        println!("{}: {}/{}", "P/T".yellow(), p, t);
+                    }
                 }
-            }
+            } else {
+                // Single-faced card
+                if let Some(cost) = &card.mana_cost {
+                    println!("{}: {}", "Mana Cost".yellow(), mana_cost_to_emoji(cost));
+                }
 
-            if let Some(pt) = card.power_toughness() {
-                println!();
-                println!("{}: {}", "P/T".yellow(), pt);
+                if !card.color_identity.is_empty() {
+                    let colors: Vec<_> = card
+                        .color_identity
+                        .iter()
+                        .map(|c| color_to_name(c))
+                        .collect();
+                    println!("{}: {}", "Colors".yellow(), colors.join(", "));
+                }
+
+                println!("{}: {}", "Type".yellow(), card.type_line);
+
+                if let Some(text) = &card.oracle_text {
+                    println!();
+                    println!("{}", "Oracle Text:".yellow());
+                    for line in text.lines() {
+                        println!("  {line}");
+                    }
+                }
+
+                if let Some(pt) = card.power_toughness() {
+                    println!();
+                    println!("{}: {}", "P/T".yellow(), pt);
+                }
             }
 
             println!();
@@ -322,6 +374,80 @@ fn capitalize(s: &str) -> String {
         None => String::new(),
         Some(first) => first.to_uppercase().chain(chars).collect(),
     }
+}
+
+fn color_to_emoji(color: &str) -> &'static str {
+    match color.to_uppercase().as_str() {
+        "W" => "☀️",
+        "U" => "💧",
+        "B" => "💀",
+        "R" => "🔥",
+        "G" => "🌳",
+        "C" => "◇",
+        _ => "?",
+    }
+}
+
+fn color_to_name(color: &str) -> &'static str {
+    match color.to_uppercase().as_str() {
+        "W" => "White",
+        "U" => "Blue",
+        "B" => "Black",
+        "R" => "Red",
+        "G" => "Green",
+        "C" => "Colorless",
+        _ => "Unknown",
+    }
+}
+
+fn mana_cost_to_emoji(mana_cost: &str) -> String {
+    let mut result = Vec::new();
+    let mut chars = mana_cost.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c == '{' {
+            let mut symbol = String::new();
+            while let Some(&next) = chars.peek() {
+                if next == '}' {
+                    chars.next();
+                    break;
+                }
+                symbol.push(chars.next().unwrap());
+            }
+
+            let emoji = if symbol.contains('/') {
+                // Hybrid mana like W/U
+                symbol
+                    .split('/')
+                    .map(|s| color_to_emoji(s))
+                    .collect::<Vec<_>>()
+                    .join("/")
+            } else if let Ok(num) = symbol.parse::<u32>() {
+                // Generic mana
+                match num {
+                    0 => "0️⃣".to_string(),
+                    1 => "1️⃣".to_string(),
+                    2 => "2️⃣".to_string(),
+                    3 => "3️⃣".to_string(),
+                    4 => "4️⃣".to_string(),
+                    5 => "5️⃣".to_string(),
+                    6 => "6️⃣".to_string(),
+                    7 => "7️⃣".to_string(),
+                    8 => "8️⃣".to_string(),
+                    9 => "9️⃣".to_string(),
+                    10 => "🔟".to_string(),
+                    _ => num.to_string(),
+                }
+            } else if symbol == "X" {
+                "Ⓧ".to_string()
+            } else {
+                color_to_emoji(&symbol).to_string()
+            };
+            result.push(emoji);
+        }
+    }
+
+    result.join(" ")
 }
 
 #[allow(clippy::too_many_arguments)]
