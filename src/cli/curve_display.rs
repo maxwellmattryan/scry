@@ -29,7 +29,7 @@ pub fn display_curve_analysis(analysis: &CurveAnalysis, by_type: bool) {
     println!();
 
     // ASCII Histogram
-    println!("{}", "Mana Curve Distribution:".cyan().bold());
+    println!("{}", "Curve Distribution:".cyan().bold());
     println!("{}", "-".repeat(60));
     println!();
 
@@ -87,28 +87,8 @@ pub fn display_curve_analysis(analysis: &CurveAnalysis, by_type: bool) {
     );
     println!();
 
-    // Distribution table
-    if !analysis.buckets.is_empty() {
-        println!("{}", "Distribution by CMC:".cyan().bold());
-        println!("{}", "-".repeat(60));
-        println!("  {:>3} | {:>5} | {:>6}", "CMC", "Count", "Percent");
-        println!("  {}", "-".repeat(22));
-
-        for bucket in &analysis.buckets {
-            let pct = analysis
-                .stats
-                .cmc_distribution
-                .get(&bucket.cmc)
-                .copied()
-                .unwrap_or(0.0)
-                * 100.0;
-            println!(
-                "  {:>3} | {:>5} | {:>5.1}%",
-                bucket.cmc, bucket.total_count, pct
-            );
-        }
-        println!();
-    }
+    // Pip Breakdown
+    display_pip_breakdown(analysis);
 }
 
 fn display_combined_histogram(analysis: &CurveAnalysis) {
@@ -118,11 +98,18 @@ fn display_combined_histogram(analysis: &CurveAnalysis) {
         let bar_len =
             (bucket.total_count as f64 / max_count as f64 * HISTOGRAM_WIDTH as f64) as usize;
         let bar = BAR_CHAR.repeat(bar_len);
+        let pct = analysis
+            .stats
+            .cmc_distribution
+            .get(&bucket.cmc)
+            .copied()
+            .unwrap_or(0.0)
+            * 100.0;
         println!(
             "  {:>2} | {} {}",
             bucket.cmc,
             bar.green(),
-            format!("({})", bucket.total_count).dimmed()
+            format!("({}, {:.1}%)", bucket.total_count, pct).dimmed()
         );
     }
 }
@@ -160,12 +147,75 @@ fn display_split_histogram(analysis: &CurveAnalysis) {
         let creature_bar = CREATURE_CHAR.repeat(creature_len);
         let non_creature_bar = NON_CREATURE_CHAR.repeat(non_creature_len);
 
+        let pct = analysis
+            .stats
+            .cmc_distribution
+            .get(&bucket.cmc)
+            .copied()
+            .unwrap_or(0.0)
+            * 100.0;
         println!(
             "  {:>2} | {}{}  {}",
             bucket.cmc,
             creature_bar.green(),
             non_creature_bar.cyan(),
-            format!("({}/{})", bucket.creature_count, bucket.non_creature_count).dimmed()
+            format!(
+                "({}/{}, {:.1}%)",
+                bucket.creature_count, bucket.non_creature_count, pct
+            )
+            .dimmed()
         );
     }
+}
+
+fn display_pip_breakdown(analysis: &CurveAnalysis) {
+    let pip = &analysis.pip_breakdown;
+    let total = pip.total();
+
+    if total == 0.0 {
+        return;
+    }
+
+    println!("{}", "Pip Breakdown:".cyan().bold());
+    println!("{}", "-".repeat(60));
+    println!();
+
+    // Collect colors with pips > 0 and sort by percentage (descending)
+    let mut colors: Vec<(&str, f64)> = vec![
+        ("☀️", pip.white),
+        ("💧", pip.blue),
+        ("💀", pip.black),
+        ("🔥", pip.red),
+        ("🌳", pip.green),
+        ("◇", pip.colorless),
+    ]
+    .into_iter()
+    .filter(|(_, count)| *count > 0.0)
+    .collect();
+
+    colors.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+    // Find max count for scaling
+    let max_count = colors.iter().map(|(_, c)| *c).fold(0.0, f64::max);
+
+    for (emoji, count) in colors {
+        let pct = count / total * 100.0;
+        let bar_len = (count / max_count * HISTOGRAM_WIDTH as f64).round() as usize;
+        let bar = BAR_CHAR.repeat(bar_len);
+
+        // Format count as integer if whole number
+        let count_str = if count.fract() == 0.0 {
+            format!("{}", count as u32)
+        } else {
+            format!("{count:.1}")
+        };
+
+        println!(
+            "  {} | {} {}",
+            emoji,
+            bar.green(),
+            format!("({count_str}, {pct:.1}%)").dimmed()
+        );
+    }
+    println!();
 }

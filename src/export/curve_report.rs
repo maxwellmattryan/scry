@@ -73,32 +73,43 @@ impl CurveReportExporter {
             }
         ));
 
-        // Distribution table
-        if !analysis.buckets.is_empty() {
-            output.push_str("## Distribution by CMC\n\n");
-            output.push_str("| CMC | Total | Creatures | Non-creatures | Percent |\n");
-            output.push_str("|-----|-------|-----------|---------------|--------|\n");
+        // Mana Pip Breakdown
+        let pip = &analysis.pip_breakdown;
+        let total_pips = pip.total();
+        if total_pips > 0.0 {
+            output.push_str("## Pip Breakdown\n\n");
 
-            for bucket in &analysis.buckets {
-                let pct = analysis
-                    .stats
-                    .cmc_distribution
-                    .get(&bucket.cmc)
-                    .copied()
-                    .unwrap_or(0.0)
-                    * 100.0;
-                output.push_str(&format!(
-                    "| {} | {} | {} | {} | {:.1}% |\n",
-                    bucket.cmc,
-                    bucket.total_count,
-                    bucket.creature_count,
-                    bucket.non_creature_count,
-                    pct
-                ));
+            // Collect and sort by percentage (descending)
+            let mut colors: Vec<(&str, f64)> = vec![
+                ("☀️", pip.white),
+                ("💧", pip.blue),
+                ("💀", pip.black),
+                ("🔥", pip.red),
+                ("🌳", pip.green),
+                ("◇", pip.colorless),
+            ]
+            .into_iter()
+            .filter(|(_, count)| *count > 0.0)
+            .collect();
+
+            colors.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+            for (emoji, count) in colors {
+                let pct = count / total_pips * 100.0;
+                if count.fract() == 0.0 {
+                    output.push_str(&format!(
+                        "- {} {} pips ({:.1}%)\n",
+                        emoji, count as u32, pct
+                    ));
+                } else {
+                    output.push_str(&format!("- {emoji} {count:.1} pips ({pct:.1}%)\n"));
+                }
             }
             output.push('\n');
+        }
 
-            // Card lists by CMC
+        // Card lists by CMC
+        if !analysis.buckets.is_empty() {
             output.push_str("## Cards by CMC\n\n");
             for bucket in &analysis.buckets {
                 output.push_str(&format!("### {} CMC\n\n", bucket.cmc));

@@ -1,6 +1,32 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Breakdown of colored mana pips in a deck
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ColorPipBreakdown {
+    pub white: f64,
+    pub blue: f64,
+    pub black: f64,
+    pub red: f64,
+    pub green: f64,
+    pub colorless: f64,
+}
+
+impl ColorPipBreakdown {
+    pub fn total(&self) -> f64 {
+        self.white + self.blue + self.black + self.red + self.green + self.colorless
+    }
+
+    pub fn add(&mut self, other: &ColorPipBreakdown) {
+        self.white += other.white;
+        self.blue += other.blue;
+        self.black += other.black;
+        self.red += other.red;
+        self.green += other.green;
+        self.colorless += other.colorless;
+    }
+}
+
 /// Entry for a single CMC bucket in the mana curve
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CmcBucket {
@@ -52,6 +78,7 @@ pub struct CurveAnalysis {
     pub stats: CurveStats,
     pub max_cmc: u32,
     pub max_count: u32,
+    pub pip_breakdown: ColorPipBreakdown,
 }
 
 impl CurveAnalysis {
@@ -65,6 +92,7 @@ impl CurveAnalysis {
             stats: CurveStats::default(),
             max_cmc: 0,
             max_count: 0,
+            pip_breakdown: ColorPipBreakdown::default(),
         }
     }
 }
