@@ -124,9 +124,9 @@ impl Format {
 
     pub fn recommended_land_range(&self) -> (u32, u32) {
         match self {
-            Format::Commander => (37, 40),
-            Format::Standard => (22, 26),
-            Format::Modern => (22, 26),
+            Format::Commander => (36, 40),
+            Format::Standard => (20, 26),
+            Format::Modern => (20, 26),
             Format::Limited => (16, 18),
             Format::Custom => (20, 30),
         }
