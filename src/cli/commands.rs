@@ -1,8 +1,11 @@
 use crate::api::{create_client, ApiProvider};
 use crate::calculator::{get_calculator, get_intensity_recommendations};
 use crate::cli::{AlgorithmArg, ApiProviderArg, FormatArg, LlmProviderArg};
-use crate::curve::CurveAnalyzer;
-use crate::deck::{guild_name, Algorithm, Color, Deck};
+use crate::curve::{
+    calculate_mana_base, detect_format_from_deck, determine_land_count, CurveAnalyzer,
+    LandCountSource,
+};
+use crate::deck::{guild_name, Algorithm, Color, Deck, ManaBase};
 use crate::export::{CurveReportExporter, JsonExporter, MarkdownExporter, SynergyReportExporter};
 use crate::input::{DeckList, DeckListParser, MoxfieldClient, TextDecklistParser};
 use crate::synergy::get_detector;
@@ -539,9 +542,12 @@ pub async fn handle_synergy_command(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn handle_curve_command(
     input: String,
     by_type: bool,
+    lands: Option<u32>,
+    algorithm: AlgorithmArg,
     export: Option<String>,
     json: Option<String>,
     api: ApiProviderArg,
@@ -571,10 +577,29 @@ pub async fn handle_curve_command(
     // Run curve analysis
     display_progress("Calculating mana curve...");
     let analyzer = CurveAnalyzer::new();
-    let analysis = analyzer.analyze(&deck_list);
+    let mut analysis = analyzer.analyze(&deck_list);
 
-    // Display results
+    // Display curve results
     display_curve_analysis(&analysis, by_type);
+
+    // Determine target land count
+    let (target_lands, land_source) = determine_land_count(&deck_list, lands, excludes_lands);
+
+    // Detect format for mana base calculation
+    let format = detect_format_from_deck(&deck_list);
+    let algo = algorithm.to_algorithm();
+
+    // Calculate mana base recommendation (including dual land detection)
+    display_progress("Calculating mana base recommendation...");
+    let mana_base = calculate_mana_base(&analysis, &deck_list, target_lands, format, algo);
+
+    // Store results in analysis for export
+    analysis.target_lands = Some(target_lands);
+    analysis.land_source = Some(land_source.clone());
+    analysis.mana_base = Some(mana_base.clone());
+
+    // Display mana base recommendation
+    display_mana_recommendation(&mana_base, target_lands, &land_source, algo);
 
     // Export if requested
     if let Some(path) = export {
@@ -590,6 +615,95 @@ pub async fn handle_curve_command(
             Err(e) => display_error(&format!("Failed to export JSON: {e}")),
         }
     }
+}
+
+/// Display mana base recommendation after curve analysis
+fn display_mana_recommendation(
+    mana_base: &ManaBase,
+    target_lands: u32,
+    land_source: &LandCountSource,
+    algorithm: Algorithm,
+) {
+    println!();
+    println!("{}", "=== MANA BASE RECOMMENDATION ===".bold().green());
+    println!();
+
+    // Show how land count was determined
+    let source_str = match land_source {
+        LandCountSource::UserProvided => "user specified".to_string(),
+        LandCountSource::DetectedFromDeck(count) => format!("detected {count} lands in deck"),
+        LandCountSource::FormatDefault(fmt) => format!("{fmt} format default"),
+    };
+    println!(
+        "{}: {} ({})",
+        "Target Lands".yellow(),
+        target_lands,
+        source_str.dimmed()
+    );
+    println!("{}: {}", "Algorithm".yellow(), algorithm.name());
+    println!();
+
+    // Dual lands (detected from deck)
+    if !mana_base.duals.is_empty() {
+        let total_duals: u32 = mana_base.duals.iter().map(|d| d.count).sum();
+        println!(
+            "{}",
+            format!("Dual/Multi-color Lands ({total_duals} detected):")
+                .cyan()
+                .bold()
+        );
+
+        for dual in &mana_base.duals {
+            let colors_str: Vec<_> = dual.colors.iter().map(|c| c.symbol()).collect();
+            println!("  {} ({}): {}", dual.name, colors_str.join("/"), dual.count);
+        }
+        println!();
+    }
+
+    // Basic lands
+    let total_basics: u32 = mana_base.basics.values().sum();
+    println!(
+        "{}",
+        format!("Basic Lands ({total_basics} recommended):")
+            .cyan()
+            .bold()
+    );
+
+    let mut basics: Vec<_> = mana_base.basics.iter().collect();
+    basics.sort_by_key(|(c, _)| match c {
+        Color::White => 0,
+        Color::Blue => 1,
+        Color::Black => 2,
+        Color::Red => 3,
+        Color::Green => 4,
+        Color::Colorless => 5,
+    });
+
+    for (color, count) in &basics {
+        let percentage = mana_base
+            .color_percentages
+            .get(color)
+            .copied()
+            .unwrap_or(0.0);
+        println!(
+            "  {} {}: {} ({:.1}%)",
+            color_to_emoji(color.symbol()),
+            color.basic_land(),
+            count,
+            percentage * 100.0
+        );
+    }
+
+    // Recommendations
+    if !mana_base.recommendations.is_empty() {
+        println!();
+        println!("{}", "Recommendations:".yellow());
+        for rec in &mana_base.recommendations {
+            println!("  {} {}", "!".yellow(), rec);
+        }
+    }
+
+    println!();
 }
 
 pub fn print_help() {

@@ -52,48 +52,72 @@ impl ManaCalculator for CmcWeightedCalculator {
             }
         }
 
-        // Calculate basic lands needed
+        // Calculate baseline basics (as if no duals existed)
         let basic_slots = deck.basic_land_slots() as f64;
-        let mut basic_counts: HashMap<Color, f64> = HashMap::new();
 
+        // Calculate remaining basics needed after accounting for duals
+        let mut remaining: HashMap<Color, f64> = HashMap::new();
         for color in &deck.colors {
             let percentage = color_percentages.get(color).copied().unwrap_or(0.0);
-            let target_sources = percentage * (deck.target_lands as f64);
+            let baseline = percentage * (deck.target_lands as f64);
             let dual_contribution = dual_sources.get(color).copied().unwrap_or(0.0);
-            let basics_needed = (target_sources - dual_contribution).max(0.0);
-            basic_counts.insert(*color, basics_needed);
+            remaining.insert(*color, (baseline - dual_contribution).max(0.0));
         }
 
-        // Normalize to fit within basic slots
-        let total_basics_needed: f64 = basic_counts.values().sum();
-        if total_basics_needed > 0.0 {
-            let scale = basic_slots / total_basics_needed;
+        let total_remaining: f64 = remaining.values().sum();
+
+        // Calculate final basic counts based on constraint
+        let mut basic_counts: HashMap<Color, f64> = HashMap::new();
+        if total_remaining >= basic_slots {
+            // Not enough slots: scale down proportionally
+            let scale = if total_remaining > 0.0 {
+                basic_slots / total_remaining
+            } else {
+                0.0
+            };
             for color in &deck.colors {
-                if let Some(count) = basic_counts.get(color) {
-                    let adjusted = (count * scale).round() as u32;
-                    if adjusted > 0 {
-                        mana_base.basics.insert(*color, adjusted);
-                    }
-                }
+                let count = remaining.get(color).copied().unwrap_or(0.0);
+                basic_counts.insert(*color, count * scale);
+            }
+        } else {
+            // Extra slots: fill remaining needs, distribute extras by original percentage
+            let extras = basic_slots - total_remaining;
+            for color in &deck.colors {
+                let need = remaining.get(color).copied().unwrap_or(0.0);
+                let percentage = color_percentages.get(color).copied().unwrap_or(0.0);
+                basic_counts.insert(*color, need + extras * percentage);
             }
         }
 
-        // Adjust rounding errors
-        let current_total: u32 = mana_base.basics.values().sum();
+        // Round using largest remainder method for accuracy
         let target_total = deck.basic_land_slots();
-        if current_total != target_total && !mana_base.basics.is_empty() {
-            let diff = target_total as i32 - current_total as i32;
-            // Find the color with highest percentage and adjust
-            if let Some((&color, _)) = color_percentages
-                .iter()
-                .filter(|(c, _)| deck.colors.contains(c))
-                .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
-            {
-                if let Some(count) = mana_base.basics.get_mut(&color) {
-                    *count = (*count as i32 + diff).max(0) as u32;
-                }
+        let mut fractional_parts: Vec<(Color, f64)> = Vec::new();
+        let mut rounded_total: u32 = 0;
+
+        for color in &deck.colors {
+            let count = basic_counts.get(color).copied().unwrap_or(0.0);
+            let floored = count.floor() as u32;
+            let fractional = count - count.floor();
+            mana_base.basics.insert(*color, floored);
+            rounded_total += floored;
+            fractional_parts.push((*color, fractional));
+        }
+
+        // Distribute remaining slots to colors with highest fractional parts
+        fractional_parts.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        let mut slots_to_add = target_total.saturating_sub(rounded_total);
+        for (color, _) in fractional_parts {
+            if slots_to_add == 0 {
+                break;
+            }
+            if let Some(count) = mana_base.basics.get_mut(&color) {
+                *count += 1;
+                slots_to_add -= 1;
             }
         }
+
+        // Remove zero-count entries
+        mana_base.basics.retain(|_, &mut v| v > 0);
 
         // Add recommendations for pip-intensive colors
         for color in &deck.colors {

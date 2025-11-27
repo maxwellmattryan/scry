@@ -1,3 +1,4 @@
+use crate::deck::{Color, ManaBase};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -24,6 +25,53 @@ impl ColorPipBreakdown {
         self.red += other.red;
         self.green += other.green;
         self.colorless += other.colorless;
+    }
+
+    /// Convert pip breakdown to mana symbol counts for calculator input
+    pub fn to_mana_symbols(&self) -> HashMap<Color, u32> {
+        let mut symbols = HashMap::new();
+
+        if self.white > 0.0 {
+            symbols.insert(Color::White, self.white.round() as u32);
+        }
+        if self.blue > 0.0 {
+            symbols.insert(Color::Blue, self.blue.round() as u32);
+        }
+        if self.black > 0.0 {
+            symbols.insert(Color::Black, self.black.round() as u32);
+        }
+        if self.red > 0.0 {
+            symbols.insert(Color::Red, self.red.round() as u32);
+        }
+        if self.green > 0.0 {
+            symbols.insert(Color::Green, self.green.round() as u32);
+        }
+        if self.colorless > 0.0 {
+            symbols.insert(Color::Colorless, self.colorless.round() as u32);
+        }
+
+        symbols
+    }
+
+    /// Get colors present in the pip breakdown (non-zero, excluding colorless)
+    pub fn colors(&self) -> Vec<Color> {
+        let mut colors = Vec::new();
+        if self.white > 0.0 {
+            colors.push(Color::White);
+        }
+        if self.blue > 0.0 {
+            colors.push(Color::Blue);
+        }
+        if self.black > 0.0 {
+            colors.push(Color::Black);
+        }
+        if self.red > 0.0 {
+            colors.push(Color::Red);
+        }
+        if self.green > 0.0 {
+            colors.push(Color::Green);
+        }
+        colors
     }
 }
 
@@ -67,6 +115,17 @@ pub struct CurveStats {
     pub non_creature_distribution: HashMap<u32, f64>,
 }
 
+/// How the target land count was determined
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum LandCountSource {
+    /// User explicitly provided via --lands flag
+    UserProvided,
+    /// Detected by counting lands in the deck
+    DetectedFromDeck(u32),
+    /// Inferred from deck format defaults
+    FormatDefault(String),
+}
+
 /// Complete mana curve analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CurveAnalysis {
@@ -79,6 +138,15 @@ pub struct CurveAnalysis {
     pub max_cmc: u32,
     pub max_count: u32,
     pub pip_breakdown: ColorPipBreakdown,
+    /// Optional mana base recommendation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mana_base: Option<ManaBase>,
+    /// Target land count used for calculation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_lands: Option<u32>,
+    /// How the land count was determined
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub land_source: Option<LandCountSource>,
 }
 
 impl CurveAnalysis {
@@ -93,6 +161,9 @@ impl CurveAnalysis {
             max_cmc: 0,
             max_count: 0,
             pip_breakdown: ColorPipBreakdown::default(),
+            mana_base: None,
+            target_lands: None,
+            land_source: None,
         }
     }
 }

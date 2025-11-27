@@ -104,6 +104,18 @@ impl DeckList {
             section,
         });
     }
+
+    /// Count total lands in the mainboard (from hydrated card data)
+    pub fn count_lands(&self) -> u32 {
+        self.mainboard()
+            .filter(|e| {
+                e.card
+                    .as_ref()
+                    .is_some_and(|c| c.type_line.to_lowercase().contains("land"))
+            })
+            .map(|e| e.quantity)
+            .sum()
+    }
 }
 
 /// Trait for parsing decklists from various sources

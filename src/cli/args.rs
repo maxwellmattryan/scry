@@ -106,6 +106,14 @@ pub enum Commands {
         #[arg(long)]
         by_type: bool,
 
+        /// Target number of lands (auto-detected if not specified)
+        #[arg(short, long)]
+        lands: Option<u32>,
+
+        /// Calculation algorithm for mana base recommendation
+        #[arg(short, long, value_enum, default_value = "simple")]
+        algorithm: AlgorithmArg,
+
         /// Export results to markdown file
         #[arg(short, long)]
         export: Option<String>,

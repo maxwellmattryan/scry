@@ -64,6 +64,8 @@ async fn main() {
         Some(Commands::Curve {
             input,
             by_type,
+            lands,
+            algorithm,
             export,
             json,
             api,
@@ -73,6 +75,8 @@ async fn main() {
             handle_curve_command(
                 input,
                 by_type,
+                lands,
+                algorithm,
                 export,
                 json,
                 api,

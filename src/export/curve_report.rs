@@ -1,4 +1,5 @@
-use crate::curve::CurveAnalysis;
+use crate::curve::{CurveAnalysis, LandCountSource};
+use crate::deck::Color;
 use chrono::Local;
 use std::fs;
 use std::io::Write;
@@ -129,6 +130,89 @@ impl CurveReportExporter {
                     }
                     output.push('\n');
                 }
+            }
+        }
+
+        // Mana Base Recommendation
+        if let Some(ref mana_base) = analysis.mana_base {
+            output.push_str("## Mana Base Recommendation\n\n");
+
+            // Show detection method
+            if let Some(ref source) = analysis.land_source {
+                let source_str = match source {
+                    LandCountSource::UserProvided => "User specified".to_string(),
+                    LandCountSource::DetectedFromDeck(count) => {
+                        format!("Detected {count} lands in deck")
+                    }
+                    LandCountSource::FormatDefault(fmt) => format!("{fmt} format default"),
+                };
+                output.push_str(&format!(
+                    "**Target Lands**: {} ({})\n\n",
+                    analysis.target_lands.unwrap_or(0),
+                    source_str
+                ));
+            }
+
+            // Dual lands table (if any detected)
+            if !mana_base.duals.is_empty() {
+                let total_duals: u32 = mana_base.duals.iter().map(|d| d.count).sum();
+                output.push_str(&format!(
+                    "### Dual/Multi-color Lands ({total_duals} detected)\n\n"
+                ));
+                output.push_str("| Type | Colors | Count |\n");
+                output.push_str("|------|--------|-------|\n");
+
+                for dual in &mana_base.duals {
+                    let colors_str: Vec<_> = dual.colors.iter().map(|c| c.symbol()).collect();
+                    output.push_str(&format!(
+                        "| {} | {} | {} |\n",
+                        dual.name,
+                        colors_str.join("/"),
+                        dual.count
+                    ));
+                }
+                output.push('\n');
+            }
+
+            // Basic lands table
+            let total_basics: u32 = mana_base.basics.values().sum();
+            output.push_str(&format!("### Basic Lands ({total_basics} recommended)\n\n"));
+            output.push_str("| Land | Count | Percentage |\n");
+            output.push_str("|------|-------|------------|\n");
+
+            let mut basics: Vec<_> = mana_base.basics.iter().collect();
+            basics.sort_by_key(|(c, _)| match c {
+                Color::White => 0,
+                Color::Blue => 1,
+                Color::Black => 2,
+                Color::Red => 3,
+                Color::Green => 4,
+                Color::Colorless => 5,
+            });
+
+            for (color, count) in &basics {
+                let pct = mana_base
+                    .color_percentages
+                    .get(color)
+                    .copied()
+                    .unwrap_or(0.0)
+                    * 100.0;
+                output.push_str(&format!(
+                    "| {} | {} | {:.1}% |\n",
+                    color.basic_land(),
+                    count,
+                    pct
+                ));
+            }
+            output.push('\n');
+
+            // Recommendations
+            if !mana_base.recommendations.is_empty() {
+                output.push_str("### Recommendations\n\n");
+                for rec in &mana_base.recommendations {
+                    output.push_str(&format!("- {rec}\n"));
+                }
+                output.push('\n');
             }
         }
 
